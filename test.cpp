@@ -19,7 +19,7 @@ void MyCallback(snd_async_handler_t *pcm_callback)
     if (avail > 250)
     {
         std::cout << "Too big  " << std::endl;
-        return;
+        // return;
     }
     std::cout << "Avail = " << avail << std::endl;
     
@@ -45,7 +45,7 @@ void MyCallback(snd_async_handler_t *pcm_callback)
 int main()
 {
     snd_pcm_t *handle;
-    int err = snd_pcm_open(&handle, "default", SND_PCM_STREAM_CAPTURE, 0);
+    int err = snd_pcm_open(&handle, "plughw:CARD=webcam,DEV=0", SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0)
     {
         std::cerr << "Error opening PCM device: " << snd_strerror(err) << std::endl;
