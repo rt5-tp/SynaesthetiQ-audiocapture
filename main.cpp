@@ -41,12 +41,10 @@ int main(int argc, char *argv[]) {
     const int buffer_size = 1024; //reduce this
     short* buffer = new short[buffer_size];
 
-    
+
     // Open a file to write the audio data
-    std::ofstream audioFile;
-    if (record) {
-        audioFile.open("audio.raw", std::ios::binary);
-    }
+    std::ofstream audioFile("audio.raw", std::ios::binary);
+    
 
 
 
