@@ -62,7 +62,7 @@ void MyCallback(snd_async_handler_t *pcm_callback)
         int y2 = (int)((float)buffer[i + 1] * scale_factor + 300.0f);
         SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
     }  
-    SDL_RenderPresent(renderer);
+    // SDL_RenderPresent(renderer);
 
 }
 
@@ -145,6 +145,7 @@ int main()
             }
         }
         // Wait for audio data to be captured and processed by the callback function
+        SDL_RenderPresent(renderer);
     }
 
    // Clean up
