@@ -18,6 +18,8 @@ public:
             throw std::runtime_error("Failed to open PCM device");
         }
 
+        
+
         snd_pcm_hw_params_t *params;
         snd_pcm_hw_params_alloca(&params);
         snd_pcm_hw_params_any(handle, params);
@@ -76,7 +78,7 @@ public:
     }
 
     void capture() {
-        printf("Initialising!");
+        
         while (!quit) {
             // Wait for audio data to be captured and processed by the callback function
         }
@@ -115,15 +117,14 @@ private:
         SDL_SetRenderDrawColor(audioCapture->renderer, 0, 0, 0, 255);
         SDL_RenderClear(audioCapture->renderer);
         SDL_SetRenderDrawColor(audioCapture->renderer, 255, 255, 255, 255);
-        for (std::vector<float>::size_type i = 0; i < audioCapture->waveform.size() - 1; ++i) {
-            int x1 = i * 800 / audioCapture->waveform.size();
-            int y1 = (1 - audioCapture->waveform[i]) * 300 + 50;
-            int x2 = (i + 1) * 800 / audioCapture->waveform.size();
-            int y2 = (1 - audioCapture->waveform[i+1]) * 300 + 50;
-            SDL_RenderDrawLine(audioCapture->renderer, x1, y1, x2, y2);
+        for (std::vector<float>::size_type i = 0; i < audioCapture->waveform.size(); ++i) {
+            int x = i * 800 / audioCapture->waveform.size();
+            int y = (1 - audioCapture->waveform[i]) * 300 + 50;
+            SDL_RenderDrawPoint(audioCapture->renderer, x, y);
         }
         SDL_RenderPresent(audioCapture->renderer);
     }
+
 
     // Signal handler for Ctrl+C
     static void signalHandler(int signal) {
@@ -149,6 +150,8 @@ bool AudioCapture::quit = false;
 
 
 int main() {
+    std::cout << "Initialising!" << std::endl;
+
     try {
         AudioCapture audioCapture;
         audioCapture.capture();
