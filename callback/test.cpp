@@ -11,7 +11,9 @@
 
 class AudioCapture {
 public:
-    AudioCapture() : audioFile("audio.raw", std::ios::binary) {
+    AudioCapture(bool sdl_enabled = false) : audioFile("audio.raw", std::ios::binary) {
+        std::cout << "Initialising audio hardware..." << std::endl;
+        std::cout << "SDL status = " << sdl_enabled << std::endl;
         int err = snd_pcm_open(&handle, "plughw:CARD=webcam,DEV=0", SND_PCM_STREAM_CAPTURE, 0);
         if (err < 0) {
             std::cerr << "Error opening PCM device: " << snd_strerror(err) << std::endl;
@@ -43,28 +45,30 @@ public:
             throw std::runtime_error("Failed to start PCM device");
         }
 
-        // Initialize SDL
-        if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-            std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to initialize SDL");
-        }
+        if (sdl_enabled) {
+            // Initialize SDL
+            if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+                std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
+                throw std::runtime_error("Failed to initialize SDL");
+            }
 
-        // Create window and renderer
-        window = SDL_CreateWindow("Audio Capture", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
-        if (!window) {
-            std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to create window");
+            // Create window and renderer
+            window = SDL_CreateWindow("Audio Capture", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+            if (!window) {
+                std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
+                throw std::runtime_error("Failed to create window");
+            }
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+            if (!renderer) {
+                std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
+                throw std::runtime_error("Failed to create renderer");
+            }
+        waveform.reserve(800);
         }
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (!renderer) {
-            std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to create renderer");
-        }
-
         signal(SIGINT, AudioCapture::signalHandler);
 
         // Initialize waveform data
-        waveform.reserve(800);
+        
 
         
     }
@@ -141,7 +145,8 @@ private:
     SDL_Renderer *renderer;
     std::vector<float> waveform;
     static bool quit;
-
+    
+    // static bool sdl_enabled;
 
 };
 
@@ -149,15 +154,21 @@ bool AudioCapture::quit = false;
 
 
 
-int main() {
+int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
+    bool sdl_enabled = false;
+    if (argc > 1) {
+        std::string arg = argv[1];
+        sdl_enabled = (arg == "sdl");
+    }
 
     try {
-        AudioCapture audioCapture;
+        AudioCapture audioCapture(sdl_enabled);
         audioCapture.capture();
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
-    return 1;
+        return 1;
     }
-return 0;
+
+    return 0;
 }
