@@ -1,19 +1,11 @@
 #include <iostream>
-#include <SDL2/SDL.h>
-#include <alsa/asoundlib.h>
-#include <fstream>
-#include <vector>
-#include <climits>
-#include <thread>
-#include <string>
-#include <signal.h>
+#include "AudioCapture.h"
+
+bool AudioCapture::quit = false;
 
 
 
-
-class AudioCapture {
-public:
-    AudioCapture(const std::string& device_name, bool sdl_enabled = false) : audioFile("audio.raw", std::ios::binary) {
+AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : audioFile("audio.raw", std::ios::binary) {
         std::cout << "Initialising audio hardware..." << std::endl;
         std::cout << "SDL status = " << sdl_enabled << std::endl;
         //int err = snd_pcm_open(&handle, "plughw:CARD=webcam,DEV=0", 
@@ -76,7 +68,7 @@ public:
         
     }
 
-    ~AudioCapture() {
+    AudioCapture::~AudioCapture() {
         audioFile.close();
         snd_pcm_close(handle);
         SDL_DestroyRenderer(renderer);
@@ -84,7 +76,7 @@ public:
         SDL_Quit();
     }
 
-    void capture() {
+    void AudioCapture::capture() {
         std::cout << "Starting audio capture!" << std::endl;
         while (!quit) {
             // Wait for audio data to be captured and processed by the callback function
@@ -92,8 +84,8 @@ public:
         std::cout << "Capture finished" << std::endl;
     }
 
-private:
-    static void MyCallback(snd_async_handler_t *pcm_callback) {
+
+    void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback) {
         AudioCapture* audioCapture = reinterpret_cast<AudioCapture*>(snd_async_handler_get_callback_private(pcm_callback));
         snd_pcm_t *handle = snd_async_handler_get_pcm(pcm_callback);
         snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
@@ -109,17 +101,25 @@ private:
             std::cerr << "Error in snd_pcm_readi: " << snd_strerror(frames) << std::endl;
             return;
         }
-
+        
         // Process the captured audio data in 'buffer'
         audioCapture->audioFile.write((char*) buffer, avail * sizeof(short));
 
         // Update waveform data
         audioCapture->waveform.clear();
+        
         for (int i = 0; i < frames; ++i) {
             short sample = ((short*) buffer)[i];
             float sampleValue = sample / static_cast<float>(SHRT_MAX);
             audioCapture->waveform.push_back(sampleValue);
         }
+        for (std::vector<float>::size_type i = 0; i < audioCapture->waveform.size(); ++i) {
+            // std::cout << "waveform[" << i << "] = " << audioCapture->waveform[i] << std::endl;
+        }
+
+     
+
+
 
         // Render waveform
         SDL_SetRenderDrawColor(audioCapture->renderer, 0, 0, 0, 255);
@@ -129,87 +129,24 @@ private:
             int x = i * 800 / audioCapture->waveform.size();
             int y = (1 - audioCapture->waveform[i]) * 300 + 50;
             SDL_RenderDrawPoint(audioCapture->renderer, x, y);
+            // std::cout << "x = " << x << ", y = " << y << std::endl;
+            // std::cout << "test = " << audioCapture->waveform[i] << std::endl;
         }
         SDL_RenderPresent(audioCapture->renderer);
     }
 
 
     // Signal handler for Ctrl+C
-    static void signalHandler(int signal) {
+    void AudioCapture::signalHandler(int signal) {
         std::cout << "Received signal " << signal << ". Exiting program." << std::endl;
         quit = true;
 
         // exit(signal);
     }
 
-    std::ofstream audioFile;
-    snd_pcm_t *handle;
-    snd_async_handler_t *pcm_callback;
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    std::vector<float> waveform;
-    static bool quit;
-    
-    // static bool sdl_enabled;
-
-};
-
-bool AudioCapture::quit = false;
 
 
 
-int main(int argc, char* argv[]) {
-    std::cout << "Initialising!" << std::endl;
-    bool sdl_enabled = false;
-    if (argc > 1) {
-        std::string arg = argv[1];
-        sdl_enabled = (arg == "sdl");
-    }
 
-    // Get a list of available audio devices
-    void **hints;
-    if (snd_device_name_hint(-1, "pcm", &hints) != 0) {
-        std::cerr << "Error getting audio device hints" << std::endl;
-        return 1;
-    }
 
-    // Print the list of available audio devices
-    int i = 0;
-    for (void **hint = hints; *hint; hint++) {
-        char *name = snd_device_name_get_hint(*hint, "NAME");
-        char *desc = snd_device_name_get_hint(*hint, "DESC");
-        std::cout << i++ << ". " << name << " - " << desc << std::endl;
-        free(name);
-        free(desc);
-    }
 
-    // Prompt the user to select an audio device
-    int device_index;
-    std::cout << "Enter the index of the audio device to use: ";
-    std::cin >> device_index;
-
-    // Get the name of the selected audio device
-    i = 0;
-    std::string device_name;
-    for (void **hint = hints; *hint; hint++) {
-        if (i++ == device_index) {
-            char *name = snd_device_name_get_hint(*hint, "NAME");
-            device_name = name;
-            free(name);
-            break;
-        }
-    }
-
-    // Free the memory used by the device hints
-    snd_device_name_free_hint(hints);
-
-    try {
-        AudioCapture audioCapture(device_name, sdl_enabled);
-        audioCapture.capture();
-    } catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
-        return 1;
-    }
-    std::cout << "Complete" << std::endl;
-    return 0;
-}

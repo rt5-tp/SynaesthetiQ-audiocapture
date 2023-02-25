@@ -1,9 +1,9 @@
 CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=-lasound -lSDL2 -lstdc++
-SOURCES=test.cpp 
+SOURCES=AudioCapture.cpp main.cpp 
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=test
+EXECUTABLE=capture
 
 all: $(SOURCES) $(EXECUTABLE)
 
@@ -12,3 +12,6 @@ $(EXECUTABLE): $(OBJECTS)
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(EXECUTABLE)
