@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-c -Wall
-LDFLAGS=-lasound -lSDL2 -lstdc++
-SOURCES=main.cpp 
+LDFLAGS=-lasound -lSDL2 -lstdc++ -lpthread
+SOURCES=AudioCapture.cpp main.cpp 
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=soundweave
 
@@ -12,3 +12,6 @@ $(EXECUTABLE): $(OBJECTS)
 
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
+
+clean:
+	rm -f $(OBJECTS) $(EXECUTABLE) *.wav *.raw

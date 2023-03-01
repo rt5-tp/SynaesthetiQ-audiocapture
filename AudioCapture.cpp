@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include "AudioCapture.h"
 
 bool AudioCapture::quit = false;
@@ -69,6 +70,7 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
     }
 
     AudioCapture::~AudioCapture() {
+        stopCapture();
         audioFile.close();
         snd_pcm_close(handle);
         SDL_DestroyRenderer(renderer);
@@ -76,13 +78,39 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
         SDL_Quit();
     }
 
-    void AudioCapture::capture() {
-        std::cout << "Starting audio capture!" << std::endl;
-        while (!quit) {
-            // Wait for audio data to be captured and processed by the callback function
-        }
-        std::cout << "Capture finished" << std::endl;
+    // void AudioCapture::capture() {
+    //     std::cout << "Starting audio capture!" << std::endl;
+    //     while (!quit) {
+    //         // Wait for audio data to be captured and processed by the callback function
+    //     }
+    //     std::cout << "Capture finished" << std::endl;
+    // }
+
+    void AudioCapture::startCapture() {
+        quit = false;
+        
+        captureThread = std::thread([this]() {
+            std::cout << "Starting audio capture!" << std::endl;
+            while (!quit) {
+                // std::cout << "Processing" << std::endl;
+                // Wait for audio data to be captured and processed by the callback function
+            }
+            std::cout << "STOP = " << quit << std::endl;
+            std::cout << "Capture finished" << std::endl;
+        });
     }
+
+    void AudioCapture::stopCapture() {
+        if (isCapturing()) {
+            quit = true;
+            captureThread.join();
+        }
+    }
+
+    bool AudioCapture::isCapturing() const {
+        return captureThread.joinable();
+    }
+
 
 
     void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback) {

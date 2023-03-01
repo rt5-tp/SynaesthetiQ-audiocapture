@@ -17,7 +17,11 @@ public:
 
     ~AudioCapture();
 
-    void capture();
+    // void capture();
+    void startCapture();
+    void stopCapture();
+    bool isCapturing() const;
+    
 
 private:
     static void MyCallback(snd_async_handler_t* handler);
@@ -29,6 +33,7 @@ private:
     SDL_Window* window;
     SDL_Renderer* renderer;
     std::vector<float> waveform;
+    std::thread captureThread;
     static bool quit;
 };
 
