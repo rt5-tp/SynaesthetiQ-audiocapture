@@ -1,4 +1,4 @@
-# SoundWeave Visual
+# Synaesthetic Audio Capture
 
 ## A reduced fork of the SoundWeave program
 
