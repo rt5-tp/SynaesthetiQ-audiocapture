@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -Wall
+CFLAGS=-c -Wall -g
 LDFLAGS=-lasound -lSDL2 -lstdc++ -lpthread
 SOURCES=AudioCapture.cpp main.cpp 
 OBJECTS=$(SOURCES:.cpp=.o)
