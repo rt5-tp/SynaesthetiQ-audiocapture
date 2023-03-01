@@ -64,7 +64,7 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
         signal(SIGINT, AudioCapture::signalHandler);
 
         // Initialize waveform data
-        
+        fftInputData.reserve(4096);
 
         
     }
@@ -72,6 +72,7 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
     AudioCapture::~AudioCapture() {
         stopCapture();
         audioFile.close();
+       
         snd_pcm_close(handle);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
@@ -117,6 +118,7 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
         AudioCapture* audioCapture = reinterpret_cast<AudioCapture*>(snd_async_handler_get_callback_private(pcm_callback));
         snd_pcm_t *handle = snd_async_handler_get_pcm(pcm_callback);
         snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
+
         if (avail < 0) {
             std::cerr << "Error in snd_pcm_avail_update: " << snd_strerror(avail) << std::endl;
             return;
@@ -132,6 +134,17 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
         
         // Process the captured audio data in 'buffer'
         audioCapture->audioFile.write((char*) buffer, avail * sizeof(short));
+        audioCapture->fftInputData.insert(audioCapture->fftInputData.end(), (float*) buffer, (float*) buffer + avail);
+
+        const size_t MAX_FFT_SIZE = 4096;
+        if (audioCapture->fftInputData.size() >= MAX_FFT_SIZE) {
+            // Reset vector to zero
+            audioCapture->fftInputData.clear();
+            std::cout << "Cleared vector" << std::endl;
+        }
+        // std::cout << "test = " << audioCapture->fftInputData.size() << std::endl;
+
+
 
         // Update waveform data
         audioCapture->waveform.clear();
