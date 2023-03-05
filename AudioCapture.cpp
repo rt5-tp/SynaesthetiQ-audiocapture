@@ -125,28 +125,32 @@ AudioCapture::AudioCapture(const std::string& device_name, bool sdl_enabled) : a
 
         std::cout << "Avail = " << avail << std::endl;
 
-        static char buffer[4096]; //1024 minimum to be safe 
-        snd_pcm_sframes_t frames = snd_pcm_readi(handle, buffer, avail);
+        // Create a vector to store the audio data
+        std::vector<short> buffer(avail);
 
+        // static char buffer[4096]; //1024 minimum to be safe 
+        snd_pcm_sframes_t frames = snd_pcm_readi(handle, buffer.data(), avail);
+
+        //Number of samples is frames * channels
         if (frames < 0) {
             std::cerr << "Error in snd_pcm_readi: " << snd_strerror(frames) << std::endl;
             return;
         }
+
+        
         
         // Process the captured audio data in 'buffer'
-        audioCapture->audioFile.write((char*) buffer, avail * sizeof(short));
+        audioCapture->audioFile.write(reinterpret_cast<const char*>(buffer.data()), avail * sizeof(short));
 
         // Update waveform data
         audioCapture->waveform.clear();
         
         for (int i = 0; i < frames; ++i) {
-            short sample = ((short*) buffer)[i];
+            short sample = buffer[i];
             float sampleValue = sample / static_cast<float>(SHRT_MAX);
             audioCapture->waveform.push_back(sampleValue);
         }
-        for (std::vector<float>::size_type i = 0; i < audioCapture->waveform.size(); ++i) {
-            // std::cout << "waveform[" << i << "] = " << audioCapture->waveform[i] << std::endl;
-        }
+
 
      
 
