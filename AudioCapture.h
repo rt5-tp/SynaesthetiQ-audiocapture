@@ -35,8 +35,6 @@ private:
     std::vector<float> waveform;
     std::thread captureThread;
     static bool quit;
-
-    std::vector<float> fftInputData;
 };
 
 #endif

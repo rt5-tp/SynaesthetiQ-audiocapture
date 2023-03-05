@@ -35,11 +35,14 @@ int main(int argc, char* argv[]) {
     // Get the name of the selected audio device
     i = 0;
     std::string device_name;
+
+    char *name;
+
     for (void **hint = hints; *hint; hint++) {
         if (i++ == device_index) {
-            char *name = snd_device_name_get_hint(*hint, "NAME");
-            device_name = name;
-            free(name);
+            name = snd_device_name_get_hint(*hint, "NAME");
+            //device_name = name;
+            //free(name);
             break;
         }
     }
@@ -48,7 +51,7 @@ int main(int argc, char* argv[]) {
     snd_device_name_free_hint(hints);
 
     try {
-        AudioCapture audioCapture(device_name, sdl_enabled);
+        AudioCapture audioCapture(name, sdl_enabled);
         audioCapture.startCapture();
         std::cout << "test" << std::endl;
         // audioCapture.isCapturing();
@@ -60,7 +63,10 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;
     }
-    
+
+    free(name);
+    //snd_device_name_free_hint (hints);
+
     std::cout << "Complete" << std::endl;
     return 0;
 }

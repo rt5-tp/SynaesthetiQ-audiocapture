@@ -12,3 +12,7 @@ sonic/
 .vscode
 
 *.o
+
+*.wav
+*.raw
+*.py
