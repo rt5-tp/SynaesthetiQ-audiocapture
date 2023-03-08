@@ -26,6 +26,8 @@ public:
 private:
     static void MyCallback(snd_async_handler_t* handler);
     static void signalHandler(int signum);
+    void performFFT(const std::vector<short>& dataCopy);
+
 
     std::ofstream audioFile;
     snd_pcm_t* handle;
@@ -35,6 +37,15 @@ private:
     std::vector<float> waveform;
     std::thread captureThread;
     static bool quit;
+    bool m_sdl_enabled;
+    
+    std::vector<short> fftInputData;
+   
+    
+    
 };
 
 #endif
+
+
+

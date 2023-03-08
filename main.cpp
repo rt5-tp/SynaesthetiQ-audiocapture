@@ -5,10 +5,26 @@
 int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
     bool sdl_enabled = false;
-    if (argc > 1) {
-        std::string arg = argv[1];
-        sdl_enabled = (arg == "sdl");
+    int device_index = 0;
+    bool skipSearch = false;
+
+    
+    for (int i = 0; i < argc; i++) {
+        std::string arg = argv[i];
+        // int iarg = stoi(arg);
+        int iarg = atoi(arg.c_str());
+        if (arg == "sdl") {
+            sdl_enabled = true;
+        }
+        else if (iarg != 0) {
+            device_index = iarg;
+            skipSearch = true;
+        }
+        else if (arg == "null") {
+            skipSearch = true;
+        }      
     }
+
 
     // Get a list of available audio devices
     void **hints;
@@ -16,26 +32,29 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error getting audio device hints" << std::endl;
         return 1;
     }
-
-    // Print the list of available audio devices
     int i = 0;
-    for (void **hint = hints; *hint; hint++) {
-        char *name = snd_device_name_get_hint(*hint, "NAME");
-        char *desc = snd_device_name_get_hint(*hint, "DESC");
-        std::cout << i++ << ". " << name << " - " << desc << std::endl;
-        free(name);
-        free(desc);
+
+    if (!skipSearch) {
+        // Print the list of available audio devices
+
+        for (void **hint = hints; *hint; hint++) {
+            char *name = snd_device_name_get_hint(*hint, "NAME");
+            char *desc = snd_device_name_get_hint(*hint, "DESC");
+            std::cout << i++ << ". " << name << " - " << desc << std::endl;
+            free(name);
+            free(desc);
+        }
+
+        // Prompt the user to select an audio device
+        
+        std::cout << "Enter the index of the audio device to use: ";
+        std::cin >> device_index;
     }
 
-    // Prompt the user to select an audio device
-    int device_index;
-    std::cout << "Enter the index of the audio device to use: ";
-    std::cin >> device_index;
+
 
     // Get the name of the selected audio device
     i = 0;
-    std::string device_name;
-
     char *name;
 
     for (void **hint = hints; *hint; hint++) {
