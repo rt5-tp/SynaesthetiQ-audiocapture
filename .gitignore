@@ -5,6 +5,7 @@
 build/
 
 sonic/
+testing/
 
 # Ignore all .DS_Store files
 .DS_Store

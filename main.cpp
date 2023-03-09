@@ -2,6 +2,14 @@
 #include <iostream>
 #include <chrono>
 
+
+//create buffer in main, pass same circ buffer to both, aggregation not inheritance
+// make queue system, thead pull and queue
+
+// audioCapture
+// FFT
+// 
+
 int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
     bool sdl_enabled = false;

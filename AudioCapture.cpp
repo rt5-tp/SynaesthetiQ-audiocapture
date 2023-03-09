@@ -4,6 +4,12 @@
 #include <chrono>
 #include <fftw3.h>
 
+//eery thread needs inreface (virtual class ref) register callback interface
+//contracts
+//like sockets
+
+
+
 bool AudioCapture::quit = false;
 
 AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : audioFile("audio.raw", std::ios::binary), m_sdl_enabled(sdl_enabled)
@@ -134,7 +140,7 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
         return;
     }
 
-    // std::cout << "Avail = " << avail << std::endl;
+    std::cout << "Avail = " << avail << std::endl;
 
     // Create a vector to store the audio data
     std::vector<short> buffer(avail);
@@ -163,6 +169,10 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
     {   
         std::cout << "Buffer filled" << std::endl;
         // Spawn a new thread to perform FFT calculations on the data
+        //start thread initially when class created
+        //use mutex or something similar, or queue system, ping pong buffer (circ buffer of 2), mutex circular buffer
+
+
         std::thread fftThread([audioCapture]() {
             // Create a copy of the data to be processed
             std::vector<short> dataCopy(audioCapture->fftInputData);
