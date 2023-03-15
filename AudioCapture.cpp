@@ -2,8 +2,7 @@
 
 bool AudioCapture::quit = false;
 
-AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : audioFile("audio.raw", std::ios::binary),
-                                                                                                       m_sdl_enabled(sdl_enabled),
+AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : m_sdl_enabled(sdl_enabled),
                                                                                                        callback(nullptr),
                                                                                                        buffer_(buffer)
 
@@ -165,47 +164,11 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
         return;
     }
 
-    // Append the data from buffer to fftInputData
-    audioCapture->fftInputData.insert(audioCapture->fftInputData.end(), buffer.begin(), buffer.begin() + frames);
 
     audioCapture->buffer_.add_data(buffer);
 
-    // std::cout << "fftinputdata size = " << audioCapture->fftInputData.size() << std::endl;
-
-    /*
-    // If fftInputData is filled up, spawn a new thread to perform FFT calculations on the data
-    if (audioCapture->fftInputData.size() >= 4096)
-    {
-        std::cout << "Buffer filled" << std::endl;
-
-        if (audioCapture->callback) {
-            audioCapture->callback(audioCapture->fftInputData);
-        }
-
-
-
-        // Spawn a new thread to perform FFT calculations on the data
-        // start thread initially when class created
-        // use mutex or something similar, or queue system, ping pong buffer (circ buffer of 2), mutex circular buffer
-
-
-        std::thread fftThread([audioCapture]()
-                              {
-        // Create a copy of the data to be processed
-        std::vector<short> dataCopy(audioCapture->fftInputData);
-
-        // Clear the original data vector to start capturing and appending again
-        audioCapture->fftInputData.clear();
-
-        // Perform FFT operations on the data copy
-        audioCapture->performFFT(dataCopy); });
-
-        // Detach the thread so it can run independently
-        fftThread.detach();
-    }*/
 
     // Process the captured audio data in 'buffer'
-    audioCapture->audioFile.write(reinterpret_cast<const char *>(buffer.data()), avail * sizeof(short));
 
     if (audioCapture->m_sdl_enabled)
     {
@@ -244,65 +207,65 @@ void AudioCapture::signalHandler(int signal)
     quit = true;
 }
 
-void AudioCapture::performFFT(const std::vector<short> &data)
-{
-    // Perform FFT operations on the copied data
-    std::cout << "FFT function called!" << std::endl;
+// void AudioCapture::performFFT(const std::vector<short> &data)
+// {
+//     // Perform FFT operations on the copied data
+//     std::cout << "FFT function called!" << std::endl;
 
-    int N = data.size();
-    fftw_complex *in = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
-    fftw_complex *out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
-    fftw_plan p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+//     int N = data.size();
+//     fftw_complex *in = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
+//     fftw_complex *out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
+//     fftw_plan p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
-    for (int i = 0; i < N; i++)
-    {
-        in[i][0] = data[i];
-        in[i][1] = 0;
-    }
-    fftw_execute(p);
-    fftw_destroy_plan(p);
-    fftw_free(in);
+//     for (int i = 0; i < N; i++)
+//     {
+//         in[i][0] = data[i];
+//         in[i][1] = 0;
+//     }
+//     fftw_execute(p);
+//     fftw_destroy_plan(p);
+//     fftw_free(in);
 
-    // Open file for writing
-    std::ofstream outfile;
-    outfile.open("fft_output.txt");
+//     // Open file for writing
+//     std::ofstream outfile;
+//     outfile.open("fft_output.txt");
 
-    // Write FFT output data to file
-    for (int i = 0; i < N; i++)
-    {
-        outfile << out[i][0] << "," << out[i][1] << "\n";
-    }
+//     // Write FFT output data to file
+//     for (int i = 0; i < N; i++)
+//     {
+//         outfile << out[i][0] << "," << out[i][1] << "\n";
+//     }
 
-    outfile.close(); // Close file
+//     outfile.close(); // Close file
 
-    // Calculate the magnitude spectrum of the FFT output
-    double *mag_spectrum = new double[N / 2];
-    for (int i = 0; i < N / 2; i++)
-    {
-        mag_spectrum[i] = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
-    }
+//     // Calculate the magnitude spectrum of the FFT output
+//     double *mag_spectrum = new double[N / 2];
+//     for (int i = 0; i < N / 2; i++)
+//     {
+//         mag_spectrum[i] = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
+//     }
 
-    // Find the index of the maximum value in the magnitude spectrum
-    int max_idx = 0;
-    double max_val = mag_spectrum[0];
-    for (int i = 1; i < N / 2; i++)
-    {
-        if (mag_spectrum[i] > max_val)
-        {
-            max_idx = i;
-            max_val = mag_spectrum[i];
-        }
-    }
+//     // Find the index of the maximum value in the magnitude spectrum
+//     int max_idx = 0;
+//     double max_val = mag_spectrum[0];
+//     for (int i = 1; i < N / 2; i++)
+//     {
+//         if (mag_spectrum[i] > max_val)
+//         {
+//             max_idx = i;
+//             max_val = mag_spectrum[i];
+//         }
+//     }
 
-    // Convert the index to a frequency value
-    double Fs = 44100; // Replace with the actual sampling rate
-    double freq = (double)max_idx / N * Fs;
+//     // Convert the index to a frequency value
+//     double Fs = 44100; // Replace with the actual sampling rate
+//     double freq = (double)max_idx / N * Fs;
 
-    // Free memory
-    delete[] mag_spectrum;
-    fftw_free(out);
+//     // Free memory
+//     delete[] mag_spectrum;
+//     fftw_free(out);
 
-    std::cout << "Most prominent frequency: " << freq << " Hz" << std::endl;
-    std::cout << "Done." << std::endl;
-}
+//     std::cout << "Most prominent frequency: " << freq << " Hz" << std::endl;
+//     std::cout << "Done." << std::endl;
+// }
 

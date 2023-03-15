@@ -8,22 +8,12 @@ PingPongBuffer::PingPongBuffer(int capacity) : capacity_(capacity),
                                                read_offset_(0),
                                                buffer_a_full_(false),
                                                buffer_b_full_(false),
-                                               on_buffer_a_full_callback_(nullptr),
-                                               on_buffer_b_full_callback_(nullptr)
+                                               on_buffer_full_callback_(nullptr)
 {
 }
 
 void PingPongBuffer::add_data(const std::vector<short> &data)
 {
-
-    // // Add this print statement to display the data being added
-    // std::cout << "Data: ";
-    // for (auto &value : data)
-    // {
-    //     std::cout << value << " ";
-    // }
-    // std::cout << std::endl;
-
     // std::cout << "Adding data" << std::endl;
     int data_size = static_cast<int>(data.size());
     int remaining_capacity = capacity_ - write_offset_;
@@ -45,28 +35,15 @@ void PingPongBuffer::add_data(const std::vector<short> &data)
         {
              
             // Some of the data will spill over to buffer B
-            std::cout << "OVERLAP" << std::endl;
-            std::cout << "remaining capacity = " << remaining_capacity << std::endl;
+            // std::cout << "OVERLAP" << std::endl;
+            // std::cout << "remaining capacity = " << remaining_capacity << std::endl;
             std::copy(data.begin(), data.begin() + remaining_capacity, current_buffer_->begin() + write_offset_);
             write_offset_ = capacity_;
             buffer_a_full_ = true;
-            std::cout << "SHOULD CALLBACK BUFFER A data" << std::endl;
-    //            std::cout << "BufferA!!!: ";
-    // for (auto &value : buffer_a_)
-    //     {
-    //         std::cout << value << " ";
-    //     }
-    // std::cout << std::endl;
+            // std::cout << "SHOULD CALLBACK BUFFER A data" << std::endl;
 
             // NEW ADDITION
-            if (on_buffer_a_full_callback_)
-            {
-                
-                std::vector<short> full_buffer(buffer_a_.begin(), buffer_a_.end());
-
-                on_buffer_a_full_callback_(full_buffer);
-                // SHOULD CALLBACK BUFFER A data
-            }
+            trigger_callback();
 
 
             switch_buffer();
@@ -79,13 +56,9 @@ void PingPongBuffer::add_data(const std::vector<short> &data)
         if (write_offset_ == capacity_)
         {
             buffer_a_full_ = true;
-            std::cout << "trigger callback a!" << std::endl;
+            // std::cout << "trigger callback a!" << std::endl;
             
-            if (on_buffer_a_full_callback_)
-            {
-                std::vector<short> full_buffer(buffer_a_.begin(), buffer_a_.end());
-                on_buffer_a_full_callback_(full_buffer);
-            }
+            trigger_callback();
             switch_buffer();
         }
     }
@@ -100,21 +73,16 @@ void PingPongBuffer::add_data(const std::vector<short> &data)
         else
         {
             // Some of the data will spill over to buffer A
-            std::cout << "OVERLAP" << std::endl;
-            std::cout << "remaining capacity = " << remaining_capacity << std::endl;
+            // std::cout << "OVERLAP" << std::endl;
+            // std::cout << "remaining capacity = " << remaining_capacity << std::endl;
             std::copy(data.begin(), data.begin() + remaining_capacity, current_buffer_->begin() + write_offset_);
             write_offset_ = capacity_;
             buffer_b_full_ = true;
-            std::cout << "SHOULD CALLBACK BUFFER B data" << std::endl;
+            // std::cout << "SHOULD CALLBACK BUFFER B data" << std::endl;
 
 
             // NEW ADDITION
-            if (on_buffer_b_full_callback_)
-            {
-                std::vector<short> full_buffer(buffer_b_.begin(), buffer_b_.end());
-                on_buffer_b_full_callback_(full_buffer);
-                // SHOULD CALLBACK BUFFER A data
-            }
+            trigger_callback();
 
             switch_buffer();
             add_data(std::vector<short>(data.begin() + remaining_capacity, data.end()));
@@ -123,14 +91,9 @@ void PingPongBuffer::add_data(const std::vector<short> &data)
         if (write_offset_ == capacity_)
         {
             buffer_b_full_ = true;
-            std::cout << "trigger callback b" << std::endl;
+            // std::cout << "trigger callback b" << std::endl;
             
-            if (on_buffer_b_full_callback_)
-            {
-                std::vector<short> full_buffer(buffer_b_.begin(), buffer_b_.end());
-
-                on_buffer_b_full_callback_(full_buffer);
-            }
+            trigger_callback();
             switch_buffer();
         }
     }
@@ -164,15 +127,33 @@ bool PingPongBuffer::is_full() const
     return buffer_a_full_ || buffer_b_full_;
 }
 
-void PingPongBuffer::set_on_buffer_a_full_callback(FullBufferCallback callback)
+
+
+void PingPongBuffer::trigger_callback()
 {
-    on_buffer_a_full_callback_ = callback;
+    if (on_buffer_full_callback_)
+    {
+        if (current_buffer_ == &buffer_a_)
+        {
+            std::vector<short> full_buffer(buffer_a_.begin(), buffer_a_.end());
+            on_buffer_full_callback_(full_buffer, 0); // Pass 0 for buffer A
+        }
+        else
+        {
+            std::vector<short> full_buffer(buffer_b_.begin(), buffer_b_.end());
+            on_buffer_full_callback_(full_buffer, 1); // Pass 1 for buffer B
+        }
+    }
 }
 
-void PingPongBuffer::set_on_buffer_b_full_callback(FullBufferCallback callback)
+
+
+void PingPongBuffer::set_on_buffer_full_callback(FullBufferCallback callback)
 {
-    on_buffer_b_full_callback_ = callback;
+    on_buffer_full_callback_ = callback;
 }
+
+
 
 // private functions
 
@@ -184,7 +165,7 @@ void PingPongBuffer::switch_buffer()
         std::fill(buffer_a_.begin(), buffer_a_.end(), 0);
         write_offset_ = 0;
         read_offset_ = 0;
-        std::cout << "Switching to buffer B" << std::endl;
+        // std::cout << "Switching to buffer B" << std::endl;
     }
     else
     {
@@ -192,7 +173,7 @@ void PingPongBuffer::switch_buffer()
         std::fill(buffer_b_.begin(), buffer_b_.end(), 0);
         write_offset_ = 0;
         read_offset_ = 0;
-        std::cout << "Switching to buffer A" << std::endl;
+        // std::cout << "Switching to buffer A" << std::endl;
     }
     buffer_a_full_ = false;
     buffer_b_full_ = false;

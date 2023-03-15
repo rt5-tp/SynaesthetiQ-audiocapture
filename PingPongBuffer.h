@@ -7,7 +7,7 @@
 class PingPongBuffer
 {
 public:
-    typedef void (*FullBufferCallback)(std::vector<short>);
+    typedef void (*FullBufferCallback)(const std::vector<short>&, int);
 
     PingPongBuffer(int capacity);
 
@@ -17,9 +17,10 @@ public:
 
     bool is_full() const;
 
-    void set_on_buffer_a_full_callback(FullBufferCallback callback);
+    void trigger_callback();
 
-    void set_on_buffer_b_full_callback(FullBufferCallback callback);
+    void set_on_buffer_full_callback(FullBufferCallback callback);
+
 
 private:
     int capacity_;
@@ -30,8 +31,7 @@ private:
     int read_offset_;
     bool buffer_a_full_;
     bool buffer_b_full_;
-    FullBufferCallback on_buffer_a_full_callback_;
-    FullBufferCallback on_buffer_b_full_callback_;
+    FullBufferCallback on_buffer_full_callback_;
 
     void switch_buffer();
 };
