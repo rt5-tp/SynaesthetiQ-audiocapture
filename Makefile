@@ -1,7 +1,7 @@
 CC=clang++
 CFLAGS=-c -Wall -fsanitize=address -fno-omit-frame-pointer
 LDFLAGS=-lasound -lSDL2 -lstdc++ -lpthread -lfftw3
-SOURCES=AudioCapture.cpp main.cpp 
+SOURCES=main.cpp PingPongBuffer.cpp AudioCapture.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=soundweave
 

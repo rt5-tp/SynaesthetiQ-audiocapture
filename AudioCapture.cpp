@@ -1,18 +1,12 @@
-#include <iostream>
-#include <thread>
 #include "AudioCapture.h"
-#include <chrono>
-#include <fftw3.h>
-
-//eery thread needs inreface (virtual class ref) register callback interface
-//contracts
-//like sockets
-
-
 
 bool AudioCapture::quit = false;
 
-AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : audioFile("audio.raw", std::ios::binary), m_sdl_enabled(sdl_enabled)
+AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : audioFile("audio.raw", std::ios::binary),
+                                                                                                       m_sdl_enabled(sdl_enabled),
+                                                                                                       callback(nullptr),
+                                                                                                       buffer_(buffer)
+
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
@@ -74,10 +68,10 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : a
         }
         waveform.reserve(800);
     }
-    signal(SIGINT, AudioCapture::signalHandler);
+    signal(SIGINT, signalHandler);
 
     // Initialize waveform data
-    
+
     fftInputData.resize(4096);
     // doFFT = false;
 }
@@ -88,7 +82,6 @@ AudioCapture::~AudioCapture()
     audioFile.close();
     snd_pcm_close(handle);
     fftInputData.clear();
-    
 
     if (m_sdl_enabled)
     {
@@ -104,7 +97,7 @@ void AudioCapture::startCapture()
     quit = false;
 
     captureThread = std::thread([this]()
-    {
+                                {
         std::cout << "Starting audio capture!" << std::endl;
         while (!quit) {
 
@@ -124,10 +117,21 @@ void AudioCapture::stopCapture()
     }
 }
 
-bool AudioCapture::isCapturing() const
+bool AudioCapture::isCapturing()
 {
     return captureThread.joinable();
 }
+
+// Callback test
+void AudioCapture::register_callback(DataAvailableCallback cb)
+{
+    callback = cb;
+}
+
+// const std::vector<int> &get_buffer() const
+// {
+//     return tempbuffer;
+// }
 
 void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 {
@@ -140,7 +144,7 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
         return;
     }
 
-    std::cout << "Avail = " << avail << std::endl;
+    // std::cout << "Avail = " << avail << std::endl;
 
     // Create a vector to store the audio data
     std::vector<short> buffer(avail);
@@ -164,30 +168,41 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
     // Append the data from buffer to fftInputData
     audioCapture->fftInputData.insert(audioCapture->fftInputData.end(), buffer.begin(), buffer.begin() + frames);
 
+    audioCapture->buffer_.add_data(buffer);
+
+    // std::cout << "fftinputdata size = " << audioCapture->fftInputData.size() << std::endl;
+
+    /*
     // If fftInputData is filled up, spawn a new thread to perform FFT calculations on the data
     if (audioCapture->fftInputData.size() >= 4096)
-    {   
+    {
         std::cout << "Buffer filled" << std::endl;
+
+        if (audioCapture->callback) {
+            audioCapture->callback(audioCapture->fftInputData);
+        }
+
+
+
         // Spawn a new thread to perform FFT calculations on the data
-        //start thread initially when class created
-        //use mutex or something similar, or queue system, ping pong buffer (circ buffer of 2), mutex circular buffer
+        // start thread initially when class created
+        // use mutex or something similar, or queue system, ping pong buffer (circ buffer of 2), mutex circular buffer
 
 
-        std::thread fftThread([audioCapture]() {
-            // Create a copy of the data to be processed
-            std::vector<short> dataCopy(audioCapture->fftInputData);
-            // std::cout << "datacopy size = " << dataCopy.size() << std::endl;
+        std::thread fftThread([audioCapture]()
+                              {
+        // Create a copy of the data to be processed
+        std::vector<short> dataCopy(audioCapture->fftInputData);
 
-            // Clear the original data vector to start capturing and appending again
-            audioCapture->fftInputData.clear();
+        // Clear the original data vector to start capturing and appending again
+        audioCapture->fftInputData.clear();
 
-            // Perform FFT operations on the data copy
-            audioCapture->performFFT(dataCopy);
-        });
+        // Perform FFT operations on the data copy
+        audioCapture->performFFT(dataCopy); });
 
         // Detach the thread so it can run independently
         fftThread.detach();
-    }
+    }*/
 
     // Process the captured audio data in 'buffer'
     audioCapture->audioFile.write(reinterpret_cast<const char *>(buffer.data()), avail * sizeof(short));
@@ -223,17 +238,13 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
     buffer.clear();
 }
 
-// Signal handler for Ctrl+C
 void AudioCapture::signalHandler(int signal)
 {
     std::cout << "Received signal " << signal << ". Exiting program." << std::endl;
     quit = true;
-
-    // exit(signal);
 }
 
-
-void AudioCapture::performFFT(const std::vector<short>& data)
+void AudioCapture::performFFT(const std::vector<short> &data)
 {
     // Perform FFT operations on the copied data
     std::cout << "FFT function called!" << std::endl;
@@ -243,7 +254,8 @@ void AudioCapture::performFFT(const std::vector<short>& data)
     fftw_complex *out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
     fftw_plan p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         in[i][0] = data[i];
         in[i][1] = 0;
     }
@@ -256,23 +268,27 @@ void AudioCapture::performFFT(const std::vector<short>& data)
     outfile.open("fft_output.txt");
 
     // Write FFT output data to file
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         outfile << out[i][0] << "," << out[i][1] << "\n";
     }
 
     outfile.close(); // Close file
 
     // Calculate the magnitude spectrum of the FFT output
-    double* mag_spectrum = new double[N/2];
-    for (int i = 0; i < N/2; i++) {
+    double *mag_spectrum = new double[N / 2];
+    for (int i = 0; i < N / 2; i++)
+    {
         mag_spectrum[i] = sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]);
     }
 
     // Find the index of the maximum value in the magnitude spectrum
     int max_idx = 0;
     double max_val = mag_spectrum[0];
-    for (int i = 1; i < N/2; i++) {
-        if (mag_spectrum[i] > max_val) {
+    for (int i = 1; i < N / 2; i++)
+    {
+        if (mag_spectrum[i] > max_val)
+        {
             max_idx = i;
             max_val = mag_spectrum[i];
         }
@@ -289,3 +305,4 @@ void AudioCapture::performFFT(const std::vector<short>& data)
     std::cout << "Most prominent frequency: " << freq << " Hz" << std::endl;
     std::cout << "Done." << std::endl;
 }
+

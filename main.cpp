@@ -1,6 +1,7 @@
-#include "AudioCapture.h"
-#include <iostream>
-#include <chrono>
+// #include "tempAudioCapture.h"
+// #include <iostream>
+// #include <chrono>
+// #include <vector>
 
 
 //create buffer in main, pass same circ buffer to both, aggregation not inheritance
@@ -9,6 +10,93 @@
 // audioCapture
 // FFT
 // 
+#include <iostream>
+#include <SDL2/SDL.h>
+#include <alsa/asoundlib.h>
+#include <fstream>
+#include <vector>
+#include <climits>
+#include <thread>
+#include <string>
+#include <signal.h>
+#include <fftw3.h>
+
+#include "PingPongBuffer.h"
+#include "AudioCapture.h"
+
+
+
+
+class RawAudioWriter {
+public:
+    RawAudioWriter(const std::string& filename) : filename_(filename) {
+        file_.open(filename_, std::ios::binary);
+        if (!file_.is_open()) {
+            throw std::runtime_error("Could not open file for writing.");
+        }
+    }
+
+void WriteData(const std::vector<short>& buffer) {
+    // std::cout << "Writing data: ";
+    // for (auto &value : buffer) {
+    //     std::cout << value << " ";
+    // }
+    // std::cout << std::endl;
+    file_.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(short));
+}
+
+
+    ~RawAudioWriter() {
+        if (file_.is_open()) {
+            file_.close();
+        }
+    }
+
+private:
+    std::string filename_;
+    std::ofstream file_;
+};
+
+
+RawAudioWriter writer("audionew.raw");
+
+
+
+
+
+void data_available_callback(const std::vector<short>& data) {
+    // Use the data vector here
+    std::cout << "Data available: " << data.size() << " samples" << std::endl;
+}
+
+void on_buffer_a_full(std::vector<short> full_buffer)
+{
+    // Do something with the full buffer A, such as writing it to a file
+    writer.WriteData(full_buffer);
+    // Add this print statement to display the data being added
+    std::cout << "Data: ";
+    for (auto &value : full_buffer)
+    {
+        std::cout << value << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Hello from buffer A callback" << std::endl;
+    std::cout << "Callback data size = " << full_buffer.size() << std::endl;
+}
+
+
+void on_buffer_b_full(std::vector<short> full_buffer)
+{
+    // Do something with the full buffer B, such as writing it to a file
+    writer.WriteData(full_buffer);
+    std::cout << "Hello from buffer B callback" << std::endl;
+    std::cout << "Callback data size = " << full_buffer.size() << std::endl;
+}
+
+
+
+
 
 int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
@@ -78,7 +166,16 @@ int main(int argc, char* argv[]) {
     snd_device_name_free_hint(hints);
 
     try {
-        AudioCapture audioCapture(name, sdl_enabled);
+        PingPongBuffer buffer(4096);
+        // Set up the callback functions to be called when buffer A or B is full
+        buffer.set_on_buffer_a_full_callback(on_buffer_a_full);
+        buffer.set_on_buffer_b_full_callback(on_buffer_b_full);
+
+        AudioCapture audioCapture(name, sdl_enabled, buffer);
+        audioCapture.register_callback(&data_available_callback);
+
+        
+
         audioCapture.startCapture();
         std::cout << "test" << std::endl;
         // audioCapture.isCapturing();

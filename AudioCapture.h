@@ -2,32 +2,41 @@
 #define AUDIO_CAPTURE_H
 
 #include <iostream>
-#include <SDL2/SDL.h>
-#include <alsa/asoundlib.h>
 #include <fstream>
 #include <vector>
-#include <climits>
+#include <cstring>
+#include <stdexcept>
 #include <thread>
-#include <string>
+#include <cmath>
 #include <signal.h>
+#include <climits>
+
+#include <alsa/asoundlib.h>
+#include <SDL2/SDL.h>
+#include <fftw3.h>
+
+#include "PingPongBuffer.h"
 
 class AudioCapture {
 public:
-    AudioCapture(const std::string& device_name, bool sdl_enabled = false);
+    typedef void (*DataAvailableCallback)(const std::vector<short>&);
 
+    AudioCapture(const std::string& device_name, bool sdl_enabled, PingPongBuffer& buffer);
     ~AudioCapture();
 
-    // void capture();
     void startCapture();
     void stopCapture();
-    bool isCapturing() const;
-    
+    bool isCapturing();
+
+    //Callback test
+    void register_callback(DataAvailableCallback cb);
+
+    const std::vector<int>& get_buffer() const;
 
 private:
-    static void MyCallback(snd_async_handler_t* handler);
-    static void signalHandler(int signum);
-    void performFFT(const std::vector<short>& dataCopy);
-
+    static void MyCallback(snd_async_handler_t* pcm_callback);
+    static void signalHandler(int signal);
+    void performFFT(const std::vector<short>& data);
 
     std::ofstream audioFile;
     snd_pcm_t* handle;
@@ -38,14 +47,13 @@ private:
     std::thread captureThread;
     static bool quit;
     bool m_sdl_enabled;
-    
+
     std::vector<short> fftInputData;
-   
-    
-    
+
+    std::vector<int> tempbuffer;
+    DataAvailableCallback callback;
+
+    PingPongBuffer& buffer_;
 };
 
-#endif
-
-
-
+#endif  // AUDIO_CAPTURE_H
