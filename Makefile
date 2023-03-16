@@ -1,9 +1,9 @@
 CC=clang++
 CFLAGS=-c -Wall -fsanitize=address -fno-omit-frame-pointer
 LDFLAGS=-lasound -lSDL2 -lstdc++ -lpthread -lfftw3
-SOURCES=main.cpp PingPongBuffer.cpp AudioCapture.cpp
+SOURCES=main.cpp PingPongBuffer.cpp AudioCapture.cpp FFTProcessor.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
-EXECUTABLE=soundweave
+EXECUTABLE=SynaesthetiQ-AudioCapture
 
 all: $(SOURCES) $(EXECUTABLE)
 
