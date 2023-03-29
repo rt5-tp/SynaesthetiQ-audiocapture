@@ -66,7 +66,6 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, Pin
         }
         waveform.reserve(800);
     }
-    signal(SIGINT, signalHandler);
 
     // Initialize waveform data
 
@@ -163,10 +162,3 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 
     buffer.clear();
 }
-
-void AudioCapture::signalHandler(int signal)
-{
-    std::cout << "Received signal " << signal << ". Exiting program." << std::endl;
-    quit = true;
-}
-

@@ -31,7 +31,6 @@ public:
 
 private:
     static void MyCallback(snd_async_handler_t* pcm_callback);
-    static void signalHandler(int signal);
     void performFFT(const std::vector<short>& data);
 
     std::ofstream audioFile;
