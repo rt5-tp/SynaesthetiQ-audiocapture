@@ -1,10 +1,12 @@
 #include "AudioCapture.h"
+#include "PingPongBuffer.h"
 
 bool AudioCapture::quit = false;
+std::vector<AudioCapture::DataAvailableCallback> AudioCapture::callbacks;
 
-AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : m_sdl_enabled(sdl_enabled),
-                                                                                                       callback(nullptr),
-                                                                                                       buffer_(buffer)
+AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : m_sdl_enabled(sdl_enabled),
+                                                                                                       callback(nullptr), buffer_(PingPongBuffer(4096))
+                                                                                                       
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
@@ -71,6 +73,10 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, Pin
 
     fftInputData.resize(4096);
     // doFFT = false;
+    
+
+    buffer_.set_on_buffer_full_callback(call_callbacks);
+
 }
 
 AudioCapture::~AudioCapture()
@@ -88,10 +94,17 @@ AudioCapture::~AudioCapture()
     }
 }
 
+
+void AudioCapture::call_callbacks(const std::vector<short>& full_buffer, int buffer_index){
+    for(auto cb : AudioCapture::callbacks){
+        cb(full_buffer);
+    }
+}
+
 // Callback test
 void AudioCapture::register_callback(DataAvailableCallback cb)
 {
-    callback = cb;
+    AudioCapture::callbacks.push_back(cb);
 }
 
 void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
