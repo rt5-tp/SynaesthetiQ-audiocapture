@@ -5,11 +5,10 @@ bool AudioCapture::quit = false;
 AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : m_sdl_enabled(sdl_enabled),
                                                                                                        callback(nullptr),
                                                                                                        buffer_(buffer)
-
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
-    // int err = snd_pcm_open(&handle, "plughw:CARD=webcam,DEV=0",
+    //int err = snd_pcm_open(&handle, "plughw:0,6",SND_PCM_STREAM_CAPTURE,0);
     int err = snd_pcm_open(&handle, device_name.c_str(), SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0)
     {
@@ -77,7 +76,6 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, Pin
 
 AudioCapture::~AudioCapture()
 {
-    stopCapture();
     audioFile.close();
     snd_pcm_close(handle);
     fftInputData.clear();
@@ -91,46 +89,11 @@ AudioCapture::~AudioCapture()
     }
 }
 
-void AudioCapture::startCapture()
-{
-    quit = false;
-
-    captureThread = std::thread([this]()
-                                {
-        std::cout << "Starting audio capture!" << std::endl;
-        while (!quit) {
-
-            // std::cout << "Processing" << std::endl;
-            // Wait for audio data to be captured and processed by the callback function
-        }
-        std::cout << "STOP = " << quit << std::endl;
-        std::cout << "Capture finished" << std::endl; });
-}
-
-void AudioCapture::stopCapture()
-{
-    if (isCapturing())
-    {
-        quit = true;
-        captureThread.join();
-    }
-}
-
-bool AudioCapture::isCapturing()
-{
-    return captureThread.joinable();
-}
-
 // Callback test
 void AudioCapture::register_callback(DataAvailableCallback cb)
 {
     callback = cb;
 }
-
-// const std::vector<int> &get_buffer() const
-// {
-//     return tempbuffer;
-// }
 
 void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 {

@@ -24,10 +24,6 @@ public:
     AudioCapture(const std::string& device_name, bool sdl_enabled, PingPongBuffer& buffer);
     ~AudioCapture();
 
-    void startCapture();
-    void stopCapture();
-    bool isCapturing();
-
     //Callback test
     void register_callback(DataAvailableCallback cb);
 
@@ -44,7 +40,6 @@ private:
     SDL_Window* window;
     SDL_Renderer* renderer;
     std::vector<float> waveform;
-    std::thread captureThread;
     static bool quit;
     bool m_sdl_enabled;
 

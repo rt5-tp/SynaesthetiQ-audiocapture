@@ -154,13 +154,11 @@ int main(int argc, char* argv[]) {
 
 
 
-        audioCapture.startCapture();
         std::cout << "Starting" << std::endl;
         // audioCapture.isCapturing();
         std::cout << "Waiting...\n";
         std::this_thread::sleep_for(std::chrono::seconds(10));
         std::cout << "Done.\n";
-        audioCapture.stopCapture();
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;
