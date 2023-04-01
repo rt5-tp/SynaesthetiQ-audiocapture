@@ -17,25 +17,21 @@
 
 #include "PingPongBuffer.h"
 
+// A wrapper around the asound library, with a few extra bells and whistles (sdl)
 class AudioCapture {
 public:
     typedef void (*DataAvailableCallback)(const std::vector<short>&);
+    AudioCapture(const std::string& device_name, bool sdl_enabled);
 
-    AudioCapture(const std::string& device_name, bool sdl_enabled, PingPongBuffer& buffer);
-    ~AudioCapture();
-
-    void startCapture();
-    void stopCapture();
-    bool isCapturing();
-
-    //Callback test
+    // calls to this function is equivalent to subscribing to the data
+    // multiple subscribers can be set up by making multiple calls
     void register_callback(DataAvailableCallback cb);
 
-    const std::vector<int>& get_buffer() const;
+    ~AudioCapture();
 
 private:
     static void MyCallback(snd_async_handler_t* pcm_callback);
-    static void signalHandler(int signal);
+    static void call_callbacks(const std::vector<short>& full_buffer, int);
     void performFFT(const std::vector<short>& data);
 
     std::ofstream audioFile;
@@ -44,7 +40,7 @@ private:
     SDL_Window* window;
     SDL_Renderer* renderer;
     std::vector<float> waveform;
-    std::thread captureThread;
+    static std::vector<DataAvailableCallback> callbacks;
     static bool quit;
     bool m_sdl_enabled;
 
@@ -53,7 +49,7 @@ private:
     std::vector<int> tempbuffer;
     DataAvailableCallback callback;
 
-    PingPongBuffer& buffer_;
+    PingPongBuffer buffer_;
 };
 
 #endif  // AUDIO_CAPTURE_H

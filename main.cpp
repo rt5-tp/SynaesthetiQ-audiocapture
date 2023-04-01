@@ -9,7 +9,6 @@
 #include <signal.h>
 #include <fftw3.h>
 
-#include "PingPongBuffer.h"
 #include "AudioCapture.h"
 #include "FFTProcessor.h"
 
@@ -48,6 +47,9 @@ FFTProcessor fftProcessor; //create instance of fftprocessor class
 
 
 void data_available_callback(const std::vector<short>& data) {
+    writer.WriteData(data);
+    fftProcessor.processData(data);
+
     // Callback function for the AudioCapture class, currenlty unused
     std::cout << "Data available: " << data.size() << " samples" << std::endl;
 }
@@ -142,11 +144,8 @@ int main(int argc, char* argv[]) {
     snd_device_name_free_hint(hints);
 
     try {
-        PingPongBuffer buffer(4096);
-        // Set up the callback functions to be called when buffer A or B is full
-        buffer.set_on_buffer_full_callback(on_buffer_full);
-
-        AudioCapture audioCapture(name, sdl_enabled, buffer);
+        
+        AudioCapture audioCapture(name, sdl_enabled);
         audioCapture.register_callback(&data_available_callback);
 
         //update callbacks for consistency
@@ -154,13 +153,11 @@ int main(int argc, char* argv[]) {
 
 
 
-        audioCapture.startCapture();
         std::cout << "Starting" << std::endl;
         // audioCapture.isCapturing();
         std::cout << "Waiting...\n";
         std::this_thread::sleep_for(std::chrono::seconds(10));
         std::cout << "Done.\n";
-        audioCapture.stopCapture();
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;

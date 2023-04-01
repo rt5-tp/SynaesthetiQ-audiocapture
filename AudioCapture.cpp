@@ -1,15 +1,16 @@
 #include "AudioCapture.h"
+#include "PingPongBuffer.h"
 
 bool AudioCapture::quit = false;
+std::vector<AudioCapture::DataAvailableCallback> AudioCapture::callbacks;
 
-AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, PingPongBuffer &buffer) : m_sdl_enabled(sdl_enabled),
-                                                                                                       callback(nullptr),
-                                                                                                       buffer_(buffer)
-
+AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : m_sdl_enabled(sdl_enabled),
+                                                                                                       callback(nullptr), buffer_(PingPongBuffer(4096))
+                                                                                                       
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
-    // int err = snd_pcm_open(&handle, "plughw:CARD=webcam,DEV=0",
+    //int err = snd_pcm_open(&handle, "plughw:0,6",SND_PCM_STREAM_CAPTURE,0);
     int err = snd_pcm_open(&handle, device_name.c_str(), SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0)
     {
@@ -67,17 +68,19 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled, Pin
         }
         waveform.reserve(800);
     }
-    signal(SIGINT, signalHandler);
 
     // Initialize waveform data
 
     fftInputData.resize(4096);
     // doFFT = false;
+    
+
+    buffer_.set_on_buffer_full_callback(call_callbacks);
+
 }
 
 AudioCapture::~AudioCapture()
 {
-    stopCapture();
     audioFile.close();
     snd_pcm_close(handle);
     fftInputData.clear();
@@ -91,46 +94,18 @@ AudioCapture::~AudioCapture()
     }
 }
 
-void AudioCapture::startCapture()
-{
-    quit = false;
 
-    captureThread = std::thread([this]()
-                                {
-        std::cout << "Starting audio capture!" << std::endl;
-        while (!quit) {
-
-            // std::cout << "Processing" << std::endl;
-            // Wait for audio data to be captured and processed by the callback function
-        }
-        std::cout << "STOP = " << quit << std::endl;
-        std::cout << "Capture finished" << std::endl; });
-}
-
-void AudioCapture::stopCapture()
-{
-    if (isCapturing())
-    {
-        quit = true;
-        captureThread.join();
+void AudioCapture::call_callbacks(const std::vector<short>& full_buffer, int buffer_index){
+    for(auto cb : AudioCapture::callbacks){
+        cb(full_buffer);
     }
-}
-
-bool AudioCapture::isCapturing()
-{
-    return captureThread.joinable();
 }
 
 // Callback test
 void AudioCapture::register_callback(DataAvailableCallback cb)
 {
-    callback = cb;
+    AudioCapture::callbacks.push_back(cb);
 }
-
-// const std::vector<int> &get_buffer() const
-// {
-//     return tempbuffer;
-// }
 
 void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 {
@@ -200,10 +175,3 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 
     buffer.clear();
 }
-
-void AudioCapture::signalHandler(int signal)
-{
-    std::cout << "Received signal " << signal << ". Exiting program." << std::endl;
-    quit = true;
-}
-
