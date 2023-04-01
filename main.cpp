@@ -86,6 +86,43 @@ std::vector<char> convertRawAudioToWav(std::vector<int16_t> rawAudioData)
     return outBuffer;
 }
 
+RawAudioWriter wavWriter("wavy.wav");
+
+
+// Warning: Singleton class
+// Do not attempt to instantiate multiple instances of this class
+class GenreClassifier {
+    static std::vector<int16_t> rec_audio;
+    static int samples_length;
+
+    public:
+    typedef void (*GenreClassificationCallback)(const std::vector<std::pair<std::string, float>>&);
+    GenreClassificationCallback callback;
+
+    GenreClassifier(float seconds=2.0){
+        samples_length = 44100*seconds;
+    }
+
+    static void audio_callback(const std::vector<short>& data){
+        std::cout << rec_audio.size() << std::endl;
+        if(rec_audio.size()<samples_length){
+            rec_audio.insert(rec_audio.end(), data.begin(), data.end());
+        }
+        else {
+            //rec_audio.clear();
+
+            std::vector<char> wavData = convertRawAudioToWav(rec_audio);
+            wavWriter.WriteData(wavData);
+            // make request
+            //callback()
+            // call callback
+        }
+    } 
+};
+
+std::vector<int16_t> GenreClassifier::rec_audio;
+int GenreClassifier::samples_length = 44100*2.0;
+
 
 // record a few seconds of audio
 std::vector<int16_t> rec_audio;
@@ -122,7 +159,6 @@ void onFFTDataAvailable(const std::vector<double> &data) {
 
 
 
-RawAudioWriter wavWriter("wavy.wav");
 
 
 int main(int argc, char* argv[]) {
@@ -188,12 +224,16 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    GenreClassifier classifier;
+
     // Free the memory used by the device hints
     snd_device_name_free_hint(hints);
 
     try {
         
         AudioCapture audioCapture(name, sdl_enabled);
+        audioCapture.register_callback(classifier.audio_callback);
+
         audioCapture.register_callback(&data_available_callback);
 
         //update callbacks for consistency
@@ -211,8 +251,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::vector<char> wavData = convertRawAudioToWav(rec_audio);
-    wavWriter.WriteData(wavData);
+    
 
     free(name);
     //snd_device_name_free_hint (hints);
