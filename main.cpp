@@ -8,6 +8,7 @@
 #include <string>
 #include <signal.h>
 #include <fftw3.h>
+#include <cstring>
 
 #include "AudioCapture.h"
 #include "FFTProcessor.h"
@@ -28,6 +29,9 @@ void WriteData(const std::vector<short>& buffer) {
     file_.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(short));
 }
 
+void WriteData(const std::vector<char>& buffer) {
+    file_.write(buffer.data(), buffer.size());
+}
 
     ~RawAudioWriter() {
         if (file_.is_open()) {
@@ -45,8 +49,51 @@ RawAudioWriter writer("audio.raw");
 FFTProcessor fftProcessor; //create instance of fftprocessor class
 
 
+std::vector<char> convertRawAudioToWav(std::vector<int16_t> rawAudioData)
+{
+    std::vector<char> outBuffer;
+    // Write WAV header to output buffer
+    const int16_t numChannels = 1;
+    const int sampleRate = 44100;
+    const int numSamples = rawAudioData.size();
+    const int32_t subchunk1Size = 16;
+    const int16_t audioFormat = 1;
+    const int32_t byteRate = sampleRate * sizeof(int16_t) * numChannels;
+    const int16_t blockAlign = sizeof(int16_t) * numChannels;
+    const int16_t blob = sizeof(int16_t) * 8;
+    const int32_t subchunk2Size = numSamples * sizeof(int16_t) * numChannels;
+    const int32_t chunkSize = subchunk2Size + 44;
+
+    outBuffer.resize(chunkSize);
+
+    std::memcpy(&outBuffer[0], "RIFF", 4);
+    std::memcpy(&outBuffer[4], &chunkSize, 4);
+    std::memcpy(&outBuffer[8], "WAVE", 4);
+    std::memcpy(&outBuffer[12], "fmt ", 4);
+    std::memcpy(&outBuffer[16], &subchunk1Size, 4);
+    std::memcpy(&outBuffer[20], &audioFormat, 2);
+    std::memcpy(&outBuffer[22], &numChannels, 2);
+    std::memcpy(&outBuffer[24], &sampleRate, 4);
+    std::memcpy(&outBuffer[28], &byteRate, 4);
+    std::memcpy(&outBuffer[32], &blockAlign, 2);
+    std::memcpy(&outBuffer[34], &blob, 2);
+    std::memcpy(&outBuffer[36], "data", 4);
+    std::memcpy(&outBuffer[40], &subchunk2Size, 4);
+
+    
+    // Write raw audio data to output buffer
+    std::memcpy(&outBuffer[44], rawAudioData.data(), numSamples * sizeof(int16_t) * numChannels);
+    return outBuffer;
+}
+
+
+// record a few seconds of audio
+std::vector<int16_t> rec_audio;
 
 void data_available_callback(const std::vector<short>& data) {
+
+    // append to vector
+    rec_audio.insert(rec_audio.end(), data.begin(), data.end());
     writer.WriteData(data);
     fftProcessor.processData(data);
 
@@ -75,6 +122,7 @@ void onFFTDataAvailable(const std::vector<double> &data) {
 
 
 
+RawAudioWriter wavWriter("wavy.wav");
 
 
 int main(int argc, char* argv[]) {
@@ -156,12 +204,15 @@ int main(int argc, char* argv[]) {
         std::cout << "Starting" << std::endl;
         // audioCapture.isCapturing();
         std::cout << "Waiting...\n";
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         std::cout << "Done.\n";
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;
     }
+
+    std::vector<char> wavData = convertRawAudioToWav(rec_audio);
+    wavWriter.WriteData(wavData);
 
     free(name);
     //snd_device_name_free_hint (hints);
