@@ -45,7 +45,6 @@ private:
 };
 
 
-RawAudioWriter writer("audio.raw");
 FFTProcessor fftProcessor; //create instance of fftprocessor class
 
 
@@ -131,7 +130,6 @@ void data_available_callback(const std::vector<short>& data) {
 
     // append to vector
     rec_audio.insert(rec_audio.end(), data.begin(), data.end());
-    writer.WriteData(data);
     fftProcessor.processData(data);
 
     // Callback function for the AudioCapture class, currenlty unused
@@ -141,7 +139,6 @@ void data_available_callback(const std::vector<short>& data) {
 void on_buffer_full(const std::vector<short>& full_buffer, int buffer_index)
 {
     // Do something with the full buffer, such as writing it to a file (i.e the writer class)
-    writer.WriteData(full_buffer);
     fftProcessor.processData(full_buffer);
 
     // std::cout << "Hello from buffer " << (buffer_index == 0 ? "A" : "B") << " callback" << std::endl;
