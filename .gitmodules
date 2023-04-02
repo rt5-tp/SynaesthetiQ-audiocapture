@@ -1,3 +1,3 @@
 [submodule "cpp_genre_classifier"]
-	path = cpp_genre_classifier
+	path = src/GenreClassification/cpp_genre_classifier
 	url = git@github.com:rt5-tp/cpp_genre_classifier.git
