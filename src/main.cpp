@@ -26,16 +26,11 @@ void data_available_callback(const std::vector<short>& data) {
     std::cout << "Data available: " << data.size() << " samples" << std::endl;
 }
 
-void on_buffer_full(const std::vector<short>& full_buffer, int buffer_index)
-{
-    // Do something with the full buffer, such as writing it to a file (i.e the writer class)
-    fftProcessor.processData(full_buffer);
-
-    // std::cout << "Hello from buffer " << (buffer_index == 0 ? "A" : "B") << " callback" << std::endl;
-    std::cout << "Buffer callback data size = " << full_buffer.size() << std::endl;
+void genre_prediction_callback(const std::vector<std::pair<std::string, float>>& predictions){
+    for(auto prediction : predictions){
+        std::cout << prediction.first << " : " << prediction.second << std::endl;
+    }
 }
-
-
 
 // FFT callback function
 void onFFTDataAvailable(const std::vector<double> &data) {
@@ -115,9 +110,10 @@ int main(int argc, char* argv[]) {
 
     try {
         
+        classifier.register_genre_callback(&genre_prediction_callback);
+
         AudioCapture audioCapture(name, sdl_enabled);
         audioCapture.register_callback(classifier.audio_callback);
-
         audioCapture.register_callback(&data_available_callback);
 
         //update callbacks for consistency
@@ -140,3 +136,4 @@ int main(int argc, char* argv[]) {
     std::cout << "Complete" << std::endl;
     return 0;
 }
+

@@ -10,7 +10,10 @@ class GenreClassifier {
 
     public:
     typedef void (*GenreClassificationCallback)(const std::vector<std::pair<std::string, float>>&);
-    GenreClassificationCallback callback;
+
+    void register_genre_callback(GenreClassificationCallback cb);
+
+    static GenreClassificationCallback callback;
 
     GenreClassifier(float seconds=2.0);
 

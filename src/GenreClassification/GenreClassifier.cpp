@@ -1,4 +1,5 @@
 #include "GenreClassifier.h"
+#include "cpp_genre_classifier/GenrePredictor.hpp"
 #include <cstring>
 #include <string>
 #include <stdio.h>
@@ -6,6 +7,9 @@
 
 std::vector<int16_t> GenreClassifier::rec_audio;
 int GenreClassifier::samples_length = 44100*2.0;
+GenreClassifier::GenreClassificationCallback GenreClassifier::callback;
+
+GenrePredictor predictor;
 
 
 class RawAudioWriter {
@@ -79,17 +83,26 @@ GenreClassifier::GenreClassifier(float seconds){
     samples_length = 44100*seconds;
 }
 
+static bool done = false;
+
 void GenreClassifier::audio_callback(const std::vector<short>& data){
     if(rec_audio.size()<samples_length){
         rec_audio.insert(rec_audio.end(), data.begin(), data.end());
     }
     else {
+        if(done) return;
         //rec_audio.clear();
+        done = true;
 
         std::vector<char> wavData = convertRawAudioToWav(rec_audio);
+        //auto predictions = predictor.predict(wavData.data(), wavData.size());
         wavWriter.WriteData(wavData);
         // make request
-        //callback()
+        //callback(predictions);
         // call callback
     }
 } 
+
+void GenreClassifier::register_genre_callback(GenreClassificationCallback cb){
+    GenreClassifier::callback = cb;
+}

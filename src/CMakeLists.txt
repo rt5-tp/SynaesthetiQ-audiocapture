@@ -7,9 +7,11 @@ set(SOURCES main.cpp AudioCapture/PingPongBuffer.cpp AudioCapture/AudioCapture.c
 
 include_directories(AudioCapture)
 include_directories(GenreClassification)
+include_directories(GenreClassification/cpp_genre_classifier)
 
+find_package( CURL REQUIRED )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME} asound SDL2 stdc++ pthread fftw3)
+target_link_libraries(${PROJECT_NAME} asound SDL2 stdc++ pthread fftw3 CURL::libcurl)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}.exe")
 
