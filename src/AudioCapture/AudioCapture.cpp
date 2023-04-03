@@ -10,7 +10,7 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : m
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
-    //int err = snd_pcm_open(&handle, "plughw:0,6",SND_PCM_STREAM_CAPTURE,0);
+    //int err = snd_pcm_open(&handle, "plughw:0,7",SND_PCM_STREAM_CAPTURE,0);
     int err = snd_pcm_open(&handle, device_name.c_str(), SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0)
     {
@@ -141,7 +141,11 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 
 
     audioCapture->buffer_.add_data(buffer);
+    
 
+    for(short sample : buffer){
+
+    }
 
     // Process the captured audio data in 'buffer'
 
