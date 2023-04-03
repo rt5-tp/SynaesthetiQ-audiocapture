@@ -23,20 +23,22 @@ void data_available_callback(const std::vector<short>& data) {
     fftProcessor.processData(data);
 
     // Callback function for the AudioCapture class, currenlty unused
-    std::cout << "Data available: " << data.size() << " samples" << std::endl;
+    //std::cout << "Data available: " << data.size() << " samples" << std::endl;
 }
 
 void genre_prediction_callback(const std::vector<std::pair<std::string, float>>& predictions){
+    std::cout << "\nGenre Predictions callback: \n";
     for(auto prediction : predictions){
         std::cout << prediction.first << " : " << prediction.second << std::endl;
     }
+    std::cout << std::endl;
 }
 
 // FFT callback function
 void onFFTDataAvailable(const std::vector<double> &data) {
     // This is the FFT output data for further processing
-    std::cout << "FFT data available!" << std::endl;
-    std::cout << "FFT data size = " << data.size() << std::endl;
+    //std::cout << "FFT data available!" << std::endl;
+    //std::cout << "FFT data size = " << data.size() << std::endl;
 }
 
 

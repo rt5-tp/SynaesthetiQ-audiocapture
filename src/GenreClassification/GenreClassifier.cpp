@@ -95,10 +95,10 @@ void GenreClassifier::audio_callback(const std::vector<short>& data){
         done = true;
 
         std::vector<char> wavData = convertRawAudioToWav(rec_audio);
-        //auto predictions = predictor.predict(wavData.data(), wavData.size());
-        wavWriter.WriteData(wavData);
+        auto predictions = predictor.predict(wavData.data(), wavData.size());
+        //wavWriter.WriteData(wavData);
         // make request
-        //callback(predictions);
+        callback(predictions);
         // call callback
     }
 } 
