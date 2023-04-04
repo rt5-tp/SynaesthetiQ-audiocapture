@@ -1,5 +1,5 @@
 #include "GenreClassifier.h"
-#include "cpp_genre_classifier/GenrePredictor.hpp"
+#include "GenrePredictor.hpp"
 #include <cstring>
 #include <string>
 #include <stdio.h>
