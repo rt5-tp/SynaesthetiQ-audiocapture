@@ -44,7 +44,7 @@ void onFFTDataAvailable(const std::vector<double> &data) {
     int numCols = 32;
 
     // Limit to 20 kHz
-    double maxFrequency = 20000;
+    double maxFrequency = 10000;
     int maxIndex = static_cast<int>(data.size() * maxFrequency / (sampleRate / 2));
 
     // Normalize FFT data
@@ -79,12 +79,25 @@ void onFFTDataAvailable(const std::vector<double> &data) {
     }
 
     // Print the matrix
+    // for (int row = 0; row < numRows; ++row) {
+    //     for (int col = 0; col < numCols; ++col) {
+    //         std::cout << matrix[row][col] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+
+    // Save the matrix data to a file
+    std::ofstream matrixFile("matrix_data.txt", std::ios::app);
     for (int row = 0; row < numRows; ++row) {
         for (int col = 0; col < numCols; ++col) {
-            std::cout << matrix[row][col] << " ";
+            matrixFile << matrix[row][col] << " ";
         }
-        std::cout << std::endl;
+        matrixFile << std::endl;
     }
+    matrixFile << "---" << std::endl;
+    matrixFile.close();
+
 }
 
 
