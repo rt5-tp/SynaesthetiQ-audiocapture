@@ -21,11 +21,13 @@
 class AudioCapture {
 public:
     typedef void (*DataAvailableCallback)(const std::vector<short>&);
-    AudioCapture(const std::string& device_name, bool sdl_enabled);
+    AudioCapture(std::string device_name, bool sdl_enabled);
 
     // calls to this function is equivalent to subscribing to the data
     // multiple subscribers can be set up by making multiple calls
     void register_callback(DataAvailableCallback cb);
+
+    std::string prompt_device_selection();
 
     ~AudioCapture();
 

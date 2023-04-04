@@ -4,12 +4,16 @@
 bool AudioCapture::quit = false;
 std::vector<AudioCapture::DataAvailableCallback> AudioCapture::callbacks;
 
-AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : m_sdl_enabled(sdl_enabled),
+AudioCapture::AudioCapture(std::string device_name, bool sdl_enabled) : m_sdl_enabled(sdl_enabled),
                                                                                                        callback(nullptr), buffer_(PingPongBuffer(4096))
                                                                                                        
 {
     std::cout << "Initialising audio hardware..." << std::endl;
     std::cout << "SDL status = " << m_sdl_enabled << std::endl;
+
+    // if device name has not been specified, prompt the user for it
+    if(device_name.size()==0) device_name = prompt_device_selection();
+    
     //int err = snd_pcm_open(&handle, "plughw:0,7",SND_PCM_STREAM_CAPTURE,0);
     int err = snd_pcm_open(&handle, device_name.c_str(), SND_PCM_STREAM_CAPTURE, 0);
     if (err < 0)
@@ -77,6 +81,50 @@ AudioCapture::AudioCapture(const std::string &device_name, bool sdl_enabled) : m
 
     buffer_.set_on_buffer_full_callback(call_callbacks);
 
+}
+
+std::string AudioCapture::prompt_device_selection(){
+
+    int device_index = 0;
+
+    // Get a list of available audio devices
+    void **hints;
+    if (snd_device_name_hint(-1, "pcm", &hints) != 0) {
+        std::cerr << "Error getting audio device hints" << std::endl;
+        throw std::exception();
+    }
+    int i = 0;
+    // Print the list of available audio devices
+
+    for (void **hint = hints; *hint; hint++) {
+        char *name = snd_device_name_get_hint(*hint, "NAME");
+        char *desc = snd_device_name_get_hint(*hint, "DESC");
+        std::cout << i++ << ". " << name << " - " << desc << std::endl;
+        free(name);
+        free(desc);
+    }
+
+    // Prompt the user to select an audio device
+    
+    std::cout << "Enter the index of the audio device to use: ";
+    std::cin >> device_index;
+
+    // Get the name of the selected audio device
+    i = 0;
+    char *name;
+
+    for (void **hint = hints; *hint; hint++) {
+        if (i++ == device_index) {
+            name = snd_device_name_get_hint(*hint, "NAME");
+            //device_name = name;
+            //free(name);
+            break;
+        }
+    }
+    snd_device_name_free_hint(hints);
+    std::string device_name(name);
+    free(name);
+    return device_name;
 }
 
 AudioCapture::~AudioCapture()
