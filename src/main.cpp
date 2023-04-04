@@ -9,6 +9,9 @@
 #include <signal.h>
 #include <fftw3.h>
 #include <cstring>
+#include <cmath>
+#include <algorithm>
+
 
 #include "AudioCapture.h"
 #include "FFTProcessor.h"
@@ -36,9 +39,52 @@ void genre_prediction_callback(const std::vector<std::pair<std::string, float>>&
 
 // FFT callback function
 void onFFTDataAvailable(const std::vector<double> &data) {
-    // This is the FFT output data for further processing
-    //std::cout << "FFT data available!" << std::endl;
-    //std::cout << "FFT data size = " << data.size() << std::endl;
+    double sampleRate = 44100;
+    int numRows = 16;
+    int numCols = 32;
+
+    // Limit to 20 kHz
+    double maxFrequency = 20000;
+    int maxIndex = static_cast<int>(data.size() * maxFrequency / (sampleRate / 2));
+
+    // Normalize FFT data
+    double maxValue = *std::max_element(data.begin(), data.begin() + maxIndex);
+    std::vector<double> normalizedData(data.size());
+    for (int i = 0; i < maxIndex; ++i) {
+        normalizedData[i] = data[i] / maxValue;
+    }
+
+    // Calculate the bins
+    std::vector<int> bins(numCols + 1);
+    for (int i = 0; i <= numCols; ++i) {
+        bins[i] = (maxIndex * i) / numCols;
+    }
+
+    // Create the 16x32 matrix
+    std::vector<std::vector<double>> matrix(numRows, std::vector<double>(numCols, 0));
+
+    // Fill the matrix with the max values for each bin
+    for (int col = 0; col < numCols; ++col) {
+        double maxValueInBin = 0;
+        for (int i = bins[col]; i < bins[col + 1]; ++i) {
+            maxValueInBin = std::max(maxValueInBin, normalizedData[i]);
+        }
+        int row = static_cast<int>((numRows - 1) * (1 - maxValueInBin));
+        for (int r = 0; r <= row; ++r) {
+            matrix[r][col] = 0;
+        }
+        for (int r = row + 1; r < numRows; ++r) {
+            matrix[r][col] = maxValueInBin;
+        }
+    }
+
+    // Print the matrix
+    for (int row = 0; row < numRows; ++row) {
+        for (int col = 0; col < numCols; ++col) {
+            std::cout << matrix[row][col] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
 
