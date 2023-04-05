@@ -52,10 +52,11 @@ std::vector<std::vector<bool>> convertFFTToLEDMatrix(const std::vector<double> &
     double maxFrequencyLog = std::log10(maxFrequency);
     double logRange = maxFrequencyLog - minFrequencyLog;
 
+    double cutoffThreshold = 1; //* maxAmplitude; // You can adjust this value to your preference
+    std::cout << "Cutoff = " << cutoffThreshold << std::endl;
+
     for (int i = 0; i < rows; i++)
     {
-        // std::cout << "i test = " << i << std::endl;
-        //ignore bottom 4 samples or so, force set to zero
         for (int j = 0; j < cols; j++)
         {
             double targetFrequencyLog = minFrequencyLog + (j * logRange) / cols;
@@ -63,34 +64,32 @@ std::vector<std::vector<bool>> convertFFTToLEDMatrix(const std::vector<double> &
             double lowerBound = targetFrequency - targetFrequency / 2;
             double upperBound = targetFrequency + targetFrequency / 2;
 
-            // std::cout << "j test = " << j << std::endl;
-
             double maxValueInBin = 0;
             int lowerIndex = static_cast<int>(lowerBound / maxFrequency * fftData.size());
             int upperIndex = std::min(static_cast<int>(upperBound / maxFrequency * fftData.size()), static_cast<int>(fftData.size()));
-
 
             for (int k = lowerIndex; k < upperIndex; ++k)
             {
                 maxValueInBin = std::max(maxValueInBin, fftData[k]);
             }
+             std::cout << "max value in bin = " << maxValueInBin << std::endl;
 
-            double minValueThreshold = 0.1; // You can adjust this value to your preference
-            double normalizedAmplitude = maxValueInBin / maxAmplitude;
-
-            if (normalizedAmplitude > minValueThreshold)
+            if (maxValueInBin > cutoffThreshold)
             {
+                double normalizedAmplitude = maxValueInBin / maxAmplitude;
+                std::cout << "Normalized Amplitude at bin " << j << ": " << normalizedAmplitude << std::endl;
                 int threshold = static_cast<int>(normalizedAmplitude * rows);
                 if (i < threshold)
                 {
                     ledMatrix[rows - i - 1][j] = true;
                 }
-            }
+            } else {std::cout << "TOO SMALL" << std::endl;}
         }
     }
 
     return ledMatrix;
 }
+
 
 void printLEDMatrix(const std::vector<std::vector<bool>> &ledMatrix)
 {
