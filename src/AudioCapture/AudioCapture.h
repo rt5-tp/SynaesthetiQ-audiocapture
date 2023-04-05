@@ -12,16 +12,15 @@
 #include <climits>
 
 #include <alsa/asoundlib.h>
-#include <SDL2/SDL.h>
 #include <fftw3.h>
 
 #include "PingPongBuffer.h"
 
-// A wrapper around the asound library, with a few extra bells and whistles (sdl)
+// A wrapper around the asound library
 class AudioCapture {
 public:
     typedef void (*DataAvailableCallback)(const std::vector<short>&);
-    AudioCapture(std::string device_name, bool sdl_enabled);
+    AudioCapture(std::string device_name);
 
     // calls to this function is equivalent to subscribing to the data
     // multiple subscribers can be set up by making multiple calls
@@ -39,12 +38,9 @@ private:
     std::ofstream audioFile;
     snd_pcm_t* handle;
     snd_async_handler_t* pcm_callback;
-    SDL_Window* window;
-    SDL_Renderer* renderer;
     std::vector<float> waveform;
     static std::vector<DataAvailableCallback> callbacks;
     static bool quit;
-    bool m_sdl_enabled;
 
     std::vector<short> fftInputData;
 
