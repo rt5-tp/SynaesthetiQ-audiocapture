@@ -92,14 +92,9 @@ void FFTProcessor::performFFT(const std::vector<double>& data) {
 
     fftw_free(out);
 
-    // Reduce the data to half - remove this line?
-    std::vector<double> reducedFFT(fftOutputData.size() / 2);
-    for (size_t i = 0; i < reducedFFT.size(); ++i) {
-        reducedFFT[i] = fftOutputData[i];
-    }
 
     if (callback) {
-        callback(reducedFFT);
+        callback(fftOutputData);
     }
 
     double sampleRate = 44100;
