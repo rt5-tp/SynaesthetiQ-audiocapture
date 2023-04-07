@@ -1,5 +1,4 @@
 #include <iostream>
-#include <SDL2/SDL.h>
 #include <alsa/asoundlib.h>
 #include <fstream>
 #include <vector>
@@ -45,27 +44,16 @@ void onFFTDataAvailable(const std::vector<double> &data) {
 
 int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
-    bool sdl_enabled = false;
     std::string device_name = "";
     
-    for (int i = 0; i < argc; i++) {
-        std::string arg = argv[i];
-        int iarg = atoi(arg.c_str());
-        if (arg == "sdl") {
-            sdl_enabled = true;
-        }
-        else if (iarg != 0) {
-            device_name = arg;
-        }
-    }
-
+    
     GenreClassifier classifier;
 
     try {
         
         classifier.register_genre_callback(&genre_prediction_callback);
 
-        AudioCapture audioCapture(device_name, sdl_enabled);
+        AudioCapture audioCapture(device_name);
         audioCapture.register_callback(classifier.audio_callback);
         audioCapture.register_callback(&data_available_callback);
 

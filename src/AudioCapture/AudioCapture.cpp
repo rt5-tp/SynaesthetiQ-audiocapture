@@ -158,9 +158,6 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
     audioCapture->buffer_.add_data(buffer);
     
 
-    for(short sample : buffer){
-
-    }
 
     // Process the captured audio data in 'buffer'
 
