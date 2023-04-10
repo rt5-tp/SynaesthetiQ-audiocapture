@@ -1,5 +1,6 @@
 #include "PingPongBuffer.h"
 
+
 PingPongBuffer::PingPongBuffer(int capacity) : capacity_(capacity),
                                                buffer_a_(capacity), // reduced to be half the total capacity
                                                buffer_b_(capacity),
@@ -11,6 +12,7 @@ PingPongBuffer::PingPongBuffer(int capacity) : capacity_(capacity),
                                                on_buffer_full_callback_(nullptr)
 {
 }
+
 
 void PingPongBuffer::add_data(const std::vector<short> &data)
 {
@@ -127,8 +129,6 @@ bool PingPongBuffer::is_full() const
     return buffer_a_full_ || buffer_b_full_;
 }
 
-
-
 void PingPongBuffer::trigger_callback()
 {
     if (on_buffer_full_callback_)
@@ -146,16 +146,10 @@ void PingPongBuffer::trigger_callback()
     }
 }
 
-
-
 void PingPongBuffer::set_on_buffer_full_callback(FullBufferCallback callback)
 {
     on_buffer_full_callback_ = callback;
 }
-
-
-
-// private functions
 
 void PingPongBuffer::switch_buffer()
 {
