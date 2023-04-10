@@ -4,12 +4,10 @@
 bool AudioCapture::quit = false;
 std::vector<AudioCapture::DataAvailableCallback> AudioCapture::callbacks;
 
-AudioCapture::AudioCapture(std::string device_name, bool sdl_enabled) : m_sdl_enabled(sdl_enabled),
-                                                                                                       callback(nullptr), buffer_(PingPongBuffer(4096))
+AudioCapture::AudioCapture(std::string device_name) : callback(nullptr), buffer_(PingPongBuffer(4096))
                                                                                                        
 {
     std::cout << "Initialising audio hardware..." << std::endl;
-    std::cout << "SDL status = " << m_sdl_enabled << std::endl;
 
     // if device name has not been specified, prompt the user for it
     if(device_name.size()==0) device_name = prompt_device_selection();
@@ -46,31 +44,6 @@ AudioCapture::AudioCapture(std::string device_name, bool sdl_enabled) : m_sdl_en
     {
         std::cerr << "Error starting PCM device: " << snd_strerror(err) << std::endl;
         throw std::runtime_error("Failed to start PCM device");
-    }
-
-    if (m_sdl_enabled)
-    {
-        // Initialize SDL
-        if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        {
-            std::cerr << "Error initializing SDL: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to initialize SDL");
-        }
-
-        // Create window and renderer
-        window = SDL_CreateWindow("Audio Capture", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
-        if (!window)
-        {
-            std::cerr << "Error creating window: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to create window");
-        }
-        renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-        if (!renderer)
-        {
-            std::cerr << "Error creating renderer: " << SDL_GetError() << std::endl;
-            throw std::runtime_error("Failed to create renderer");
-        }
-        waveform.reserve(800);
     }
 
     // Initialize waveform data
@@ -133,13 +106,7 @@ AudioCapture::~AudioCapture()
     snd_pcm_close(handle);
     fftInputData.clear();
 
-    if (m_sdl_enabled)
-    {
-
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-    }
+    
 }
 
 
@@ -191,39 +158,8 @@ void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
     audioCapture->buffer_.add_data(buffer);
     
 
-    for(short sample : buffer){
-
-    }
 
     // Process the captured audio data in 'buffer'
-
-    if (audioCapture->m_sdl_enabled)
-    {
-        // Update waveform data
-        audioCapture->waveform.clear();
-
-        for (int i = 0; i < frames; ++i)
-        {
-            short sample = buffer[i];
-            float sampleValue = sample / static_cast<float>(SHRT_MAX);
-            audioCapture->waveform.push_back(sampleValue);
-        }
-
-        // Render waveform
-        SDL_SetRenderDrawColor(audioCapture->renderer, 0, 0, 0, 255);
-        SDL_RenderClear(audioCapture->renderer);
-        SDL_SetRenderDrawColor(audioCapture->renderer, 255, 255, 255, 255);
-        for (std::vector<float>::size_type i = 0; i < audioCapture->waveform.size(); ++i)
-        {
-            int x = i * 800 / audioCapture->waveform.size();
-            int y = (1 - audioCapture->waveform[i]) * 300 + 50;
-            SDL_RenderDrawPoint(audioCapture->renderer, x, y);
-            // std::cout << "x = " << x << ", y = " << y << std::endl;
-            // std::cout << "test = " << audioCapture->waveform[i] << std::endl;
-        }
-        SDL_RenderPresent(audioCapture->renderer);
-        // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    }
 
     buffer.clear();
 }

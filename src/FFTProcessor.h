@@ -9,6 +9,11 @@
 #include <fftw3.h>
 #include <cmath>
 
+enum ReductionMethod {
+    AVERAGE,
+    MAXIMUM
+};
+
 class FFTProcessor {
 public:
     using DataAvailableCallback = void(*)(const std::vector<double> &);
@@ -21,16 +26,19 @@ public:
     void processData(const std::vector<short> &data);
     void registerCallback(DataAvailableCallback cb);
 
+    ReductionMethod reductionMethod = AVERAGE;
+    std::vector<double> getReducedResolutionFFT(const std::vector<double>& fftOutputData, int numSections);
+
 private:
     void workerThread();
-    void performFFT(const std::vector<short> &data);
+    void performFFT(const std::vector<double> &data);
 
     std::thread fftThread;
     std::mutex mtx;
     std::condition_variable cv;
     bool stopThread;
     bool newData;
-    std::vector<short> inputData;
+    std::vector<double> inputData;
     DataAvailableCallback callback;
 };
 

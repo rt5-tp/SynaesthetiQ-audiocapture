@@ -25,14 +25,20 @@ void FFTProcessor::stop() {
 }
 
 void FFTProcessor::processData(const std::vector<short> &data) {
-    {   
-        // std::cout << "FFT processing!" << std::endl;
+    {
         std::unique_lock<std::mutex> lock(mtx);
-        inputData = data;
+        
+        // Normalize the input data
+        inputData.resize(data.size());
+        for (size_t i = 0; i < data.size(); ++i) {
+            inputData[i] = static_cast<double>(data[i]) / 32767.0;
+        }
+        
         newData = true;
     }
     cv.notify_one();
 }
+
 
 void FFTProcessor::registerCallback(DataAvailableCallback cb) {
     callback = cb;
@@ -48,7 +54,7 @@ void FFTProcessor::workerThread() {
             break;
         }
 
-        std::vector<short> dataCopy = inputData;
+        std::vector<double> dataCopy = inputData;
         newData = false;
         lock.unlock();
 
@@ -56,7 +62,9 @@ void FFTProcessor::workerThread() {
     }
 }
 
-void FFTProcessor::performFFT(const std::vector<short>& data) {
+
+
+void FFTProcessor::performFFT(const std::vector<double>& data) {
     int N = data.size();
     fftw_complex* in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
     fftw_complex* out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
@@ -83,6 +91,7 @@ void FFTProcessor::performFFT(const std::vector<short>& data) {
     }
 
     fftw_free(out);
+
 
     if (callback) {
         callback(fftOutputData);

@@ -1,5 +1,5 @@
 #include "GenreClassifier.h"
-#include "cpp_genre_classifier/GenrePredictor.hpp"
+#include "GenrePredictor.hpp"
 #include <cstring>
 #include <string>
 #include <stdio.h>
@@ -96,7 +96,7 @@ void GenreClassifier::audio_callback(const std::vector<short>& data){
 
         std::vector<char> wavData = convertRawAudioToWav(rec_audio);
         auto predictions = predictor.predict(wavData.data(), wavData.size());
-        //wavWriter.WriteData(wavData);
+        wavWriter.WriteData(wavData);
         // make request
         callback(predictions);
         // call callback
