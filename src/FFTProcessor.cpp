@@ -1,7 +1,10 @@
 #include "FFTProcessor.h"
 
-FFTProcessor::FFTProcessor() : stopThread(false), newData(false) {
+FFTProcessor* FFTProcessor::singleton;
+
+FFTProcessor::FFTProcessor() : stopThread(false) {
     start();
+    singleton = this;
 }
 
 FFTProcessor::~FFTProcessor() {
@@ -19,24 +22,22 @@ void FFTProcessor::stop() {
             std::unique_lock<std::mutex> lock(mtx);
             stopThread = true;
         }
-        cv.notify_one();
+        audio_available.notify_one();
         fftThread.join();
     }
 }
 
-void FFTProcessor::processData(const std::vector<short> &data) {
+void FFTProcessor::audio_callback(const std::vector<short> &data){
     {
-        std::unique_lock<std::mutex> lock(mtx);
-        
+        std::unique_lock<std::mutex> lock(singleton->mtx);
         // Normalize the input data
-        inputData.resize(data.size());
+        singleton->inputData.resize(data.size());
         for (size_t i = 0; i < data.size(); ++i) {
-            inputData[i] = static_cast<double>(data[i]) / 32767.0;
+            singleton->inputData[i] = static_cast<double>(data[i]) / 32767.0;
         }
-        
-        newData = true;
+        singleton->newData = true;
     }
-    cv.notify_one();
+    singleton->audio_available.notify_one();
 }
 
 
@@ -46,9 +47,11 @@ void FFTProcessor::registerCallback(DataAvailableCallback cb) {
 
 void FFTProcessor::workerThread() {
     while (true) {
-        // std::cout << "WORKER THREAD" << std::endl;
+
         std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this]() { return newData || stopThread; });
+        singleton->audio_available.wait(lock, [this]{
+            return newData || stopThread;
+            });
 
         if (stopThread) {
             break;
