@@ -2,7 +2,7 @@
 
 FFTProcessor* FFTProcessor::singleton;
 
-FFTProcessor::FFTProcessor() : stopThread(false) {
+FFTProcessor::FFTProcessor() : stopThread(false), newData(false) {
     singleton = this;
     start();
 }
