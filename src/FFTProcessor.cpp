@@ -3,8 +3,8 @@
 FFTProcessor* FFTProcessor::singleton;
 
 FFTProcessor::FFTProcessor() : stopThread(false) {
-    start();
     singleton = this;
+    start();
 }
 
 FFTProcessor::~FFTProcessor() {
