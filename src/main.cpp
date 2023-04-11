@@ -19,15 +19,6 @@
 
 FFTProcessor fftProcessor; //create instance of fftprocessor class
 
-
-void data_available_callback(const std::vector<short>& data) {
-
-    fftProcessor.processData(data);
-
-    // Callback function for the AudioCapture class, currenlty unused
-    //std::cout << "Data available: " << data.size() << " samples" << std::endl;
-}
-
 void genre_prediction_callback(const std::vector<std::pair<std::string, float>>& predictions){
     std::cout << "\nGenre Predictions callback: \n";
     for(auto prediction : predictions){
@@ -40,7 +31,6 @@ void genre_prediction_callback(const std::vector<std::pair<std::string, float>>&
 void onFFTDataAvailable(const std::vector<double> &data) {
     std::cout << "FFT DATA AVAILABLE" << std::endl;
 }
-
 
 int main(int argc, char* argv[]) {
     std::cout << "Initialising!" << std::endl;
@@ -55,7 +45,7 @@ int main(int argc, char* argv[]) {
 
         AudioCapture audioCapture(device_name);
         audioCapture.register_callback(classifier.audio_callback);
-        audioCapture.register_callback(&data_available_callback);
+        audioCapture.register_callback(fftProcessor.audio_callback);
 
         //update callbacks for consistency
         fftProcessor.registerCallback(onFFTDataAvailable);

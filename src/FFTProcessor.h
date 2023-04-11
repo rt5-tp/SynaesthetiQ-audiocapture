@@ -23,7 +23,8 @@ public:
 
     void start();
     void stop();
-    void processData(const std::vector<short> &data);
+    static void audio_callback(const std::vector<short> &data);
+
     void registerCallback(DataAvailableCallback cb);
 
     ReductionMethod reductionMethod = AVERAGE;
@@ -33,9 +34,12 @@ private:
     void workerThread();
     void performFFT(const std::vector<double> &data);
 
+    static FFTProcessor* singleton;
+
     std::thread fftThread;
     std::mutex mtx;
-    std::condition_variable cv;
+    std::condition_variable audio_available;
+    static std::condition_variable saudio_available;
     bool stopThread;
     bool newData;
     std::vector<double> inputData;
