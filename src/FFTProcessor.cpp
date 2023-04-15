@@ -117,6 +117,7 @@ void FFTProcessor::performFFT(const std::vector<double> &data)
         fftCallback(fftOutputData);
     }
 
+    // std::cout << "sending data" << std::endl;
     if (ledMatrixCallback)
     {
         int rows = 16;
