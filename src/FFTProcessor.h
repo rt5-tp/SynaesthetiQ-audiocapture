@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <fftw3.h>
 #include <cmath>
+#include <algorithm>
 
 enum ReductionMethod {
     AVERAGE,
@@ -17,6 +18,7 @@ enum ReductionMethod {
 class FFTProcessor {
 public:
     using DataAvailableCallback = void(*)(const std::vector<double> &);
+    using LEDCallback = void(*)(const std::vector<std::vector<bool>> &);
 
     FFTProcessor();
     ~FFTProcessor();
@@ -26,6 +28,8 @@ public:
     static void audio_callback(const std::vector<short> &data);
 
     void registerCallback(DataAvailableCallback cb);
+    void registerLEDCallback(LEDCallback cb);
+
 
     ReductionMethod reductionMethod = AVERAGE;
     std::vector<double> getReducedResolutionFFT(const std::vector<double>& fftOutputData, int numSections);
@@ -33,6 +37,8 @@ public:
 private:
     void workerThread();
     void performFFT(const std::vector<double> &data);
+    std::vector<std::vector<bool>> convertFFTToLEDMatrix(const std::vector<double> &fftData, int rows, int cols, double minFrequency, double maxFrequency);
+
 
     static FFTProcessor* singleton;
 
@@ -43,7 +49,8 @@ private:
     bool stopThread;
     bool newData;
     std::vector<double> inputData;
-    DataAvailableCallback callback;
+    DataAvailableCallback fftCallback;
+    LEDCallback ledMatrixCallback;
 };
 
 #endif // FFT_PROCESSOR_H
