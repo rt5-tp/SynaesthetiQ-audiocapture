@@ -10,15 +10,17 @@
 #include <cmath>
 #include <algorithm>
 
-enum ReductionMethod {
+enum ReductionMethod
+{
     AVERAGE,
     MAXIMUM
 };
 
-class FFTProcessor {
+class FFTProcessor
+{
 public:
-    using DataAvailableCallback = void(*)(const std::vector<double> &);
-    using LEDCallback = void(*)(const std::vector<std::vector<bool>> &);
+    using DataAvailableCallback = void (*)(const std::vector<double> &);
+    using LEDCallback = void (*)(const std::vector<std::vector<bool>> &);
 
     FFTProcessor();
     ~FFTProcessor();
@@ -30,17 +32,15 @@ public:
     void registerCallback(DataAvailableCallback cb);
     void registerLEDCallback(LEDCallback cb);
 
-
     ReductionMethod reductionMethod = AVERAGE;
-    std::vector<double> getReducedResolutionFFT(const std::vector<double>& fftOutputData, int numSections);
+    std::vector<double> getReducedResolutionFFT(const std::vector<double> &fftOutputData, int numSections);
 
 private:
     void workerThread();
     void performFFT(const std::vector<double> &data);
     std::vector<std::vector<bool>> convertFFTToLEDMatrix(const std::vector<double> &fftData, int rows, int cols, double minFrequency, double maxFrequency);
 
-
-    static FFTProcessor* singleton;
+    static FFTProcessor *singleton;
 
     std::thread fftThread;
     std::mutex mtx;

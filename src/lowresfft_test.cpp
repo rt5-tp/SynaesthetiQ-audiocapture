@@ -41,11 +41,10 @@ void genre_prediction_callback(const std::vector<std::pair<std::string, float>> 
     std::cout << std::endl;
 }
 
-
 void onLEDMatrixAvailable(const std::vector<std::vector<bool>> &ledMatrix)
 {
     // Output the LED matrix to display here!
-    // printLEDMatrix(ledMatrix); // Console printing for debugging 
+    // printLEDMatrix(ledMatrix); // Console printing for debugging
     std::cout << "Triggering led callback" << std::endl;
     // Temporary SDL functions
     mtx.lock();
@@ -56,19 +55,7 @@ void onLEDMatrixAvailable(const std::vector<std::vector<bool>> &ledMatrix)
 void onFFTDataAvailable(const std::vector<double> &data)
 {
     std::cout << "FFT DATA AVAILABLE" << std::endl;
-    int rows = 16;
-    int cols = 32;
-    double minFrequency = 60; // Set minimum frequency for visualisation
-    double maxFrequency = 16000; // Set maximum frequency for visualisation
-    // std::vector<std::vector<bool>> ledMatrix = convertFFTToLEDMatrix(data, rows, cols, minFrequency, maxFrequency); // 2D boolean vector to represent LED matrix
-    // printLEDMatrix(ledMatrix); // Console printing for debugging 
 
-    // Output the LED matrix to display here!
-
-    // Temporary SDL functions
-    // mtx.lock();
-    // sharedLedMatrix = ledMatrix;
-    // mtx.unlock();
 }
 
 // int main(int argc, char *argv[])
@@ -120,14 +107,11 @@ void onFFTDataAvailable(const std::vector<double> &data)
 //     return 0;
 // }
 
-
-// Temporary main function for SDL visualisation 
+// Temporary main function for SDL visualisation
 int main(int argc, char *argv[])
 {
     std::cout << "Initialising!" << std::endl;
     std::string device_name = "";
-
-
 
     GenreClassifier classifier;
 
