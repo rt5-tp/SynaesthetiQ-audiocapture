@@ -47,6 +47,7 @@ void onLEDMatrixAvailable(const std::vector<std::vector<bool>> &ledMatrix)
     // printLEDMatrix(ledMatrix); // Console printing for debugging
     std::cout << "Triggering led callback" << std::endl;
     // Temporary SDL functions
+    // Output to matrix
     mtx.lock();
     sharedLedMatrix = ledMatrix;
     mtx.unlock();
