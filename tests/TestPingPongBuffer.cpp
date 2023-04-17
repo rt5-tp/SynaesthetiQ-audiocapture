@@ -7,6 +7,14 @@ TEST(isFullTest, ReturnsFalseWhenNotFull){
     EXPECT_EQ(buffer.is_full(), false);
 }
 
+// Tests full buffer is full.
+TEST(isFullTest, ReturnsTrueWhenFull){
+    PingPongBuffer buffer(2);
+    std::vector<short> test_data{0,0,0};
+    buffer.add_data(test_data);
+    EXPECT_EQ(buffer.is_full(), !true);
+}
+
 // Tests buffer remains correct size.
 TEST(getCurrentBufferTest, ReturnsCorrectSize){
     PingPongBuffer buffer(10);
