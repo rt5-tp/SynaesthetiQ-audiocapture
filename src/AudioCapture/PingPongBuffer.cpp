@@ -2,7 +2,7 @@
 
 
 PingPongBuffer::PingPongBuffer(int capacity) : capacity_(capacity),
-                                               buffer_a_(capacity), // reduced to be half the total capacity
+                                               buffer_a_(capacity),
                                                buffer_b_(capacity),
                                                current_buffer_(&buffer_a_),
                                                write_offset_(0),

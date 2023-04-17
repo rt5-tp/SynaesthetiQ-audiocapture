@@ -4,7 +4,7 @@
 bool AudioCapture::quit = false;
 std::vector<AudioCapture::DataAvailableCallback> AudioCapture::callbacks;
 
-AudioCapture::AudioCapture(std::string device_name) : callback(nullptr), buffer_(PingPongBuffer(4096))
+AudioCapture::AudioCapture(std::string device_name) : captureReady(false), callback(nullptr), buffer_(PingPongBuffer(4096))
                                                                                                        
 {
     std::cout << "Initialising audio hardware..." << std::endl;
@@ -51,6 +51,7 @@ AudioCapture::AudioCapture(std::string device_name) : callback(nullptr), buffer_
     fftInputData.resize(4096);
     // doFFT = false;
     
+    captureThread = std::thread(&AudioCapture::CaptureThreadFunction, this);
 
     buffer_.set_on_buffer_full_callback(call_callbacks);
 
@@ -102,9 +103,17 @@ std::string AudioCapture::prompt_device_selection(){
 
 AudioCapture::~AudioCapture()
 {
+    std::cout << "Closing audiocapture" << std::endl;
     audioFile.close();
     snd_pcm_close(handle);
     fftInputData.clear();
+
+    quit = true;
+    captureCv.notify_one();
+    if (captureThread.joinable())
+    {
+        captureThread.join();
+    }
 
     
 }
@@ -124,42 +133,66 @@ void AudioCapture::register_callback(DataAvailableCallback cb)
 
 void AudioCapture::MyCallback(snd_async_handler_t *pcm_callback)
 {
-    AudioCapture *audioCapture = reinterpret_cast<AudioCapture *>(snd_async_handler_get_callback_private(pcm_callback));
-    snd_pcm_t *handle = snd_async_handler_get_pcm(pcm_callback);
-    snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
-    if (avail < 0)
-    {
-        std::cerr << "Error in snd_pcm_avail_update: " << snd_strerror(avail) << std::endl;
-        return;
-    }
-
-    // std::cout << "Avail = " << avail << std::endl;
-
-    // Create a vector to store the audio data
-    std::vector<short> buffer(avail);
-
-    // static char buffer[4096]; //1024 minimum to be safe
-    snd_pcm_sframes_t frames = snd_pcm_readi(handle, buffer.data(), avail);
-
-    // Number of samples is frames * channels
-    if (frames < 0)
-    {
-        std::cerr << "Error in snd_pcm_readi: " << snd_strerror(frames) << std::endl;
-        return;
-    }
-
-    if (buffer.size() > 2048)
-    {
-        std::cerr << "Buffer overflow" << std::endl;
-        return;
-    }
+    AudioCapture *instance = static_cast<AudioCapture*>(snd_async_handler_get_callback_private(pcm_callback));
+    // std::cout << "alsa data available" << std::endl;
+    std::unique_lock<std::mutex> lock(instance->captureMutex);
+    instance->captureReady = true;
+    lock.unlock();
+    instance->captureCv.notify_one();
+}
 
 
-    audioCapture->buffer_.add_data(buffer);
+
+
+
+
+void AudioCapture::CaptureThreadFunction()
+{   
     
+    while (!quit)
+    {
+        // std::cout << "alsa data processing in new thread" << std::endl;
+        std::unique_lock<std::mutex> lock(captureMutex);
+        captureCv.wait(lock, [this] { return captureReady; });
 
+        snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
+        if (avail < 0)
+        {
+            std::cerr << "Error in snd_pcm_avail_update: " << snd_strerror(avail) << std::endl;
+            return;
+        }
 
-    // Process the captured audio data in 'buffer'
+        // std::cout << "avail = " << avail << std::endl;
 
-    buffer.clear();
+        // Create a vector to store the audio data
+        std::vector<short> buffer(avail);
+
+        snd_pcm_sframes_t frames = snd_pcm_readi(handle, buffer.data(), avail);
+
+        // Number of samples is frames * channels
+      if (frames < 0)
+{
+    std::cerr << "Error in snd_pcm_readi: " << snd_strerror(frames) << std::endl;
+    if (frames == -EPIPE) {
+        std::cerr << "Attempting to recover from broken pipe" << std::endl;
+        int err = snd_pcm_prepare(handle);
+        if (err < 0) {
+            std::cerr << "Error preparing PCM device: " << snd_strerror(err) << std::endl;
+            throw std::runtime_error("Failed to prepare PCM device");
+        }
+    }
+    return;
+}
+
+        if (buffer.size() > 2048)
+        {
+            std::cerr << "Buffer overflow" << std::endl;
+            // return;
+        }
+
+        buffer_.add_data(buffer);
+        buffer.clear();
+
+        captureReady = false;
+    }
 }
