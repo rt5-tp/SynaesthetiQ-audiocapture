@@ -4,5 +4,6 @@
 
 This repo hosts a limited version of the SoundWeave library for testing in local environments. Instead of sending audio data over the internet, it is processed on the local machine.
 
-## Update 150323
-Incorporate the use of a ping pong buffer to store the captured audio data. This permits for more efficient processing.
+## SynaesthetiQ AudioCapture
+
+The audio-capture aspect of the SynaesthetiQ project utilises the ALSA (Advanced Linux Sound Architecture) to capture live audio data from hardware devices using a callback function. It uses the built in ALSA async handler callback to capture new data, and this captured data is then stored in the custom PingPongBuffer class. The ALSA callback runs in its own thread, allowing the SynaesthetiQ program to continue with other tasks while continuing to capture data in real-time. 
