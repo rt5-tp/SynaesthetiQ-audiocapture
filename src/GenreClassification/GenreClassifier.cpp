@@ -11,6 +11,10 @@ GenreClassifier::GenreClassificationCallback GenreClassifier::callback;
 
 GenrePredictor predictor;
 
+/**
+ * @class RawAudioWriter
+ * @brief Class to write captured data to a raw audio file
+ */
 
 class RawAudioWriter {
 public:
